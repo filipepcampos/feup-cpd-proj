@@ -162,9 +162,9 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 	for (int y = 0; y < m_ar; y += bkSize) {
 		for (int x = 0; x < m_ar; x += bkSize) {
 			for (int i = y; i < y + bkSize; ++i) {
-				for (int j = x; j < x + bkSize; j++) {
-					for(int k = 0; k < bkSize; k++) {	
-						temp += pha[i*m_ar+k] * phb[k*m_ar+j];
+				for (int j = x; j < x + bkSize; ++j) {
+					for(int k = 0; k < bkSize; ++k) {
+						temp += pha[i*m_ar+(k+j)] * phb[(k+i)*m_ar+j];
 					}
 					phc[i*m_ar+j]=temp;
 				}
