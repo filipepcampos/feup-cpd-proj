@@ -9,12 +9,6 @@ using namespace std;
 
 #define SYSTEMTIME clock_t
 
-// def initialize_matrixes(size):
-//     ma = [[1 for _ in range(size)] for _ in range(size)]
-//     mb = [[i + 1 for _ in range(size)] for i in range(size)]
-//     mc = [[0 for _ in range(size)] for _ in range(size)]
-//     return ma, mb, mc
-
 void OnMult(int m_ar, int m_br) 
 {
 	
@@ -75,7 +69,6 @@ void OnMult(int m_ar, int m_br)
     free(phc);
 }
 
-// add code here for line x line matriz multiplication
 void OnMultLine(int m_ar, int m_br)
 {
 	SYSTEMTIME Time1, Time2;
@@ -111,9 +104,8 @@ void OnMultLine(int m_ar, int m_br)
 		{	temp = 0;
 			for( j=0; j<m_br; j++)
 			{	
-				temp += pha[i*m_ar+k] * phb[k*m_br+j];
+				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
 			}
-			phc[i*m_ar+j]=temp;
 		}
 	}
 
@@ -135,7 +127,6 @@ void OnMultLine(int m_ar, int m_br)
     free(phc);
 }
 
-// add code here for block x block matriz multiplication
 void OnMultBlock(int m_ar, int m_br, int bkSize)
 {
     SYSTEMTIME Time1, Time2;
