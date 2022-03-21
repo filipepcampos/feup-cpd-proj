@@ -101,7 +101,7 @@ void OnMultLine(int m_ar, int m_br)
 
 	for(i=0; i<m_ar; i++)
 	{	for( k=0; k<m_ar; k++)
-		{	temp = 0;
+		{	temp = 0; // TODO: This temp used to clean trash values (temp=0; temp+=; phc[...] = temp)
 			for( j=0; j<m_br; j++)
 			{	
 				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
@@ -148,16 +148,32 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 		for(int j = 0; j < m_br; j++)
 			phb[i*m_br + j] = (double)(i+1);
 
+	for(int i = 0; i < m_ar*m_br; ++i){
+		phc[i] = 0;
+	}
+
     Time1 = clock();
 
-	for (int y = 0; y < m_ar; y += bkSize) {
-		for (int x = 0; x < m_ar; x += bkSize) {
-			for (int i = y; i < y + bkSize; ++i) {
-				for (int j = x; j < x + bkSize; ++j) {
-					for(int k = 0; k < bkSize; ++k) {
-						temp += pha[i*m_ar+(k+j)] * phb[(k+i)*m_ar+j];
+	int blocks_per_row = m_ar/bkSize;	
+	for (int block_y = 0; block_y < blocks_per_row; ++block_y){ // Go through each 'block line' one by one
+		for (int block_x = 0; block_x < blocks_per_row; ++block_x){ // Go through each block in a line
+			int block_y_index = block_y * bkSize * m_ar;
+			int block_x_index = block_x * bkSize;
+			int block_index = block_y_index + block_x_index; // Index of the first element of the block
+
+			// Now we must do the dot product of the corresponding row in A and column in B
+			for(int block_k = 0; block_k < blocks_per_row; block_k++){	
+				int block_A_index = block_y_index + block_k * bkSize; // Iterates over the row, each loop advances bkSize positions
+				int block_B_index = block_k * bkSize * m_ar + block_x_index; // Iterates over the column, each loop advances bkSize rows
+
+				// Multiply these two matrixes, A and B
+				// Slightly adapted OnMultLine 
+				for(int i = 0; i < bkSize; ++i){
+					for(int k = 0; k < bkSize; k++){
+						for(int j = 0; j < bkSize; ++j){
+							phc[block_index + (i*m_ar+j)] += pha[block_A_index + (i*m_ar+k)] * phb[block_B_index + (k*m_ar+j)];
+						}
 					}
-					phc[i*m_ar+j]=temp;
 				}
 			}
 		}
