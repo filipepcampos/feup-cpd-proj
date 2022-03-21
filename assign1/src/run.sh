@@ -65,8 +65,8 @@ if [ "$run_3" = true ] ; then
             for j in 128 256 512
             do
                 echo "3. $i x $i (block size: $j)"
-                echo -e "3-$i" >> output
-                echo -e "3\n$i" | ./test >> output
+                echo -e "3-$i-$j" >> output
+                echo -e "3\n$i\n$j" | ./test >> output
             done
         done
 fi
