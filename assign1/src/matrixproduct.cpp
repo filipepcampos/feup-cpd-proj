@@ -85,29 +85,28 @@ void OnMultLine(int m_ar, int m_br)
 	phb = (double *)malloc((m_ar * m_ar) * sizeof(double));
 	phc = (double *)malloc((m_ar * m_ar) * sizeof(double));
 
-	for(i=0; i<m_ar; i++)
-		for(j=0; j<m_ar; j++)
+	for(i=0; i<m_ar; ++i)
+		for(j=0; j<m_ar; ++j)
 			pha[i*m_ar + j] = (double)1.0;
 
-
-
-	for(i=0; i<m_br; i++)
-		for(j=0; j<m_br; j++)
+	for(i=0; i<m_br; ++i)
+		for(j=0; j<m_br; ++j)
 			phb[i*m_br + j] = (double)(i+1);
-
-
+	
+	for(int i = 0; i < m_ar*m_br; ++i)
+		phc[i] = 0;
 
     Time1 = clock();
 
-	for(i=0; i<m_ar; i++)
-	{	for( k=0; k<m_ar; k++)
+	for(i=0; i<m_ar; ++i)
+	{	for( k=0; k<m_ar; ++k)
 		{	
 			temp = 0;
-			for( j=0; j<m_br; j++)
+			for( j=0; j<m_br; ++j)
 			{	
 				temp += pha[i*m_ar+k] * phb[k*m_br+j];
 			}
-			phc[i*m_ar+j] = temp;
+			phc[i*m_ar+j] += temp;
 		}
 	}
 
@@ -118,8 +117,8 @@ void OnMultLine(int m_ar, int m_br)
 
 	// display 10 elements of the result matrix tto verify correctness
 	cout << "Result matrix: " << endl;
-	for(i=0; i<1; i++)
-	{	for(j=0; j<min(10,m_br); j++)
+	for(i=0; i<1; ++i)
+	{	for(j=0; j<min(10,m_br); ++j)
 			cout << phc[j] << " ";
 	}
 	cout << endl;
@@ -142,12 +141,12 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 	phb = (double *)malloc((m_ar * m_ar) * sizeof(double));
 	phc = (double *)malloc((m_ar * m_ar) * sizeof(double));
 
-	for(int i = 0; i < m_ar; i++)
-		for(int j = 0; j < m_ar; j++)
+	for(int i = 0; i < m_ar; ++i)
+		for(int j = 0; j < m_ar; ++j)
 			pha[i*m_ar + j] = (double)1.0;
 
-	for(int i = 0; i < m_br; i++)
-		for(int j = 0; j < m_br; j++)
+	for(int i = 0; i < m_br; ++i)
+		for(int j = 0; j < m_br; ++j)
 			phb[i*m_br + j] = (double)(i+1);
 
 	for(int i = 0; i < m_ar*m_br; ++i){
@@ -164,14 +163,14 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 			int block_index = block_y_index + block_x_index; // Index of the first element of the block
 
 			// Now we must do the dot product of the corresponding row in A and column in B
-			for(int block_k = 0; block_k < blocks_per_row; block_k++){	
+			for(int block_k = 0; block_k < blocks_per_row; ++block_k){	
 				int block_A_index = block_y_index + block_k * bkSize; // Iterates over the row, each loop advances bkSize positions
 				int block_B_index = block_k * bkSize * m_ar + block_x_index; // Iterates over the column, each loop advances bkSize rows
 
 				// Multiply these two matrixes, A and B
 				// Slightly adapted OnMultLine 
 				for(int i = 0; i < bkSize; ++i){
-					for(int k = 0; k < bkSize; k++){
+					for(int k = 0; k < bkSize; ++k){
 						for(int j = 0; j < bkSize; ++j){
 							phc[block_index + (i*m_ar+j)] += pha[block_A_index + (i*m_ar+k)] * phb[block_B_index + (k*m_ar+j)];
 						}
@@ -187,8 +186,8 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 
 	// display 10 elements of the result matrix tto verify correctness
 	cout << "Result matrix: " << endl;
-	for(int i = 0; i < 1; i++)
-	{	for(int j = 0; j < min(10,m_br); j++)
+	for(int i = 0; i < 1; ++i)
+	{	for(int j = 0; j < min(10,m_br); ++j)
 			cout << phc[j] << " ";
 	}
 	cout << endl;
