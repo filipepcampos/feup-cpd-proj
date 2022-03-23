@@ -1,3 +1,5 @@
+import time
+
 def get_int_from_stdin():
     try:
         return int(input())
@@ -6,9 +8,9 @@ def get_int_from_stdin():
         return get_int_from_stdin()
 
 def initialize_matrixes(size):
-    ma = [1 for _ in range(size*size)]
-    mb = [i + 1 for i in range(size) for _ in range(size)]
-    mc = [0 for _ in range(size*size)]
+    ma = [[1 for _ in range(size)] for _ in range(size)]
+    mb = [[i + 1 for _ in range(size)] for i in range(size)]
+    mc = [[0 for _ in range(size)] for _ in range(size)]
     return ma, mb, mc
 
 def onMult(size):
@@ -17,7 +19,7 @@ def onMult(size):
     for i in range(size):
         for j in range(size):
             for k in range(size):
-                mc[i*size+j] += ma[i*size+k] * mb[k*size+j]
+                mc[i][j] += ma[i][k] * mb[k][j]
     
     return mc
 
@@ -27,31 +29,12 @@ def onMultLine(size):
     for i in range(size):
         for k in range(size):
             for j in range(size):
-                mc[i*size+j] += ma[i*size+k] * mb[k*size+j]
+                mc[i][j] += ma[i][k] * mb[k][j]
     
     return mc
 
-def onMultBlock(size, bkSize):
-    ma, mb, mc = initialize_matrixes(size)
-
-    num_blocks = int(size / bkSize)
-    for block_y in range(num_blocks):
-        block_y_index = block_y * bkSize * size
-        for block_x in range(num_blocks):
-            block_x_index = block_x * bkSize
-            block_index = block_y_index + block_x_index
-
-            for block_k in range(num_blocks):
-                block_A_index = block_y_index + block_k * bkSize
-                block_B_index = block_k * bkSize * size + block_x_index
-
-                for i in range(bkSize):
-                    for k in range(bkSize):
-                        for j in range(bkSize):
-                            mc[block_index+(i*size+j)] += ma[block_A_index+(i*size+k)] * mb[block_B_index+(k*size+j)]
-
-    
-    return mc
+def onMultBlock(size):
+    return
 
 # Switch-case Alternative
 options = {1: onMult, 2: onMultLine, 3: onMultBlock}
@@ -69,7 +52,11 @@ def main():
     size = get_int_from_stdin()
 
     # Algorithm Choosen
-    print(options[selection](size)) # TODO: ACCEPT BLOCK SIZE
+    start = time.time()
+    res = options[selection](size)
+    end = time.time()
+    print(f"Time: {end-start:.3f} seconds")
+    print(res[0][:10])
 
 if __name__ == "__main__":
     main()
