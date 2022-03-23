@@ -74,7 +74,7 @@
 
 ## 3.
 
-| n   | block size (s) | t (s) | GFlops / Capacidade |  L1 Data Cache Misses | L2 Data Cache Misses |
+| n   | block size | t (s) | GFlops / Capacidade |  L1 Data Cache Misses | L2 Data Cache Misses |
 |-----|-----------|-------|---------------------| --- | --- |
 |4096 | 128 | 61.153|2.247460524782104 |9691212983 | 17662146027 |
 |4096 | 256 | 56.416|2.4361697651730005 | 9102172943 | 13276842928 |
