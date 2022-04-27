@@ -1,3 +1,5 @@
+package pt.up.fe.cpd;
+
 public class Cluster implements ClusterMembership {
     @Override
     public void join(Node node) {

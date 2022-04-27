@@ -1,3 +1,5 @@
+package pt.up.fe.cpd;
+
 public interface KeyValueStore {
     /**
      * Adds a key-value pair to the store

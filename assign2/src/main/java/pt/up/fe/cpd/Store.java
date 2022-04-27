@@ -1,3 +1,5 @@
+package pt.up.fe.cpd;
+
 public class Store extends Node implements KeyValueStore {
 
     @Override

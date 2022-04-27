@@ -1,3 +1,5 @@
+package pt.up.fe.cpd;
+
 public interface ClusterMembership {
     /**
      * Adds a node to the cluster
