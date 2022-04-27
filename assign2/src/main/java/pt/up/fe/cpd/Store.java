@@ -2,6 +2,10 @@ package pt.up.fe.cpd;
 
 public class Store extends Node implements KeyValueStore {
 
+    public Store(String nodeId, String storagePort) {
+        super(nodeId, storagePort);
+    }
+
     @Override
     public String put(String key, byte[] value) {
         return null;
