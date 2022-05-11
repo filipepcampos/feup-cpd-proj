@@ -1,10 +1,9 @@
 package pt.up.fe.cpd;
 
-public class Node implements ClusterMembership {
+public class Node {
     private String nodeId;
     private String storagePort;
     private int membershipCounter;
-    //List<
 
     public Node(String nodeId, String storagePort) {
         this.nodeId = nodeId;
@@ -20,8 +19,7 @@ public class Node implements ClusterMembership {
         return this.storagePort;
     }
 
-    @Override
-    public void join(Node node) {
+    public void join() {
         // - Before MC start accepting connections on port whose number it sends in JOIN message
         // - Multicast JOIN message with membership counter
         // - Receive 3 membership messages: list of current cluster members and 32 most recent membership events (logs) 
@@ -33,8 +31,7 @@ public class Node implements ClusterMembership {
         // [After joining the cluster the node should probably start listening to the Multicast Address for 1 second appart MEMBERSHIP messages]
     }
 
-    @Override
-    public void leave(String nodeId) {
+    public void leave() {
         // - Multicast LEAVE message
         // - Update membership counter        
     }

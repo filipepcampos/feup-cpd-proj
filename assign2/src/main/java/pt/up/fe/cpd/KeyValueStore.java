@@ -7,7 +7,7 @@ public interface KeyValueStore {
      * @param value value that will be stored associated to the key
      * @return sha-256 encoded key
      */
-    public  String put(String key, byte[] value);
+    public String put(String key, byte[] value);
 
     /**
      * Retrieves the value bounded to the key
@@ -20,5 +20,5 @@ public interface KeyValueStore {
      * Deletes a key-value pair
      * @param key sha-256 encoded key
      */
-    public  void delete(String key);
+    public void delete(String key);
 }
