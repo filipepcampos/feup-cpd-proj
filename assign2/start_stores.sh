@@ -1,0 +1,1 @@
+java -classpath ./build/classes/java/main -Djava.rmi.server.codebase=file:./build/classes/java/main/ pt.up.fe.cpd.Store 127.0.0.1 9001 127.0.0.1 9002

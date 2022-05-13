@@ -1,5 +1,8 @@
 package pt.up.fe.cpd;
 
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -38,5 +41,17 @@ public class Store extends Node implements KeyValueStore {
         String storagePort = args[3];
 
         Store store = new Store(nodeId, storagePort);
+        try {
+            System.setProperty("java.rmi.server.hostname", nodeId); // TODO: I'm not 100% sure if this is what we should do
+            MembershipService stub = (MembershipService) UnicastRemoteObject.exportObject(store, 0); // TODO: change port?
+            // Bind the remote object's stub in the registry
+            Registry registry = LocateRegistry.getRegistry();
+            registry.bind("MembershipService", stub);
+
+            System.err.println("Server ready");
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.toString());
+            e.printStackTrace();
+        }
     }
 }

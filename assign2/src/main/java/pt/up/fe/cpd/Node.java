@@ -1,6 +1,6 @@
 package pt.up.fe.cpd;
 
-public class Node {
+public class Node implements MembershipService {
     private String nodeId;
     private String storagePort;
     private int membershipCounter;
@@ -20,6 +20,7 @@ public class Node {
     }
 
     public void join() {
+        System.out.println("JOIN");
         // - Before MC start accepting connections on port whose number it sends in JOIN message
         // - Multicast JOIN message with membership counter
         // - Receive 3 membership messages: list of current cluster members and 32 most recent membership events (logs) 
@@ -32,6 +33,7 @@ public class Node {
     }
 
     public void leave() {
+        System.out.println("LEAVE");
         // - Multicast LEAVE message
         // - Update membership counter        
     }
