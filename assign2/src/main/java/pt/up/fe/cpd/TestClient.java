@@ -9,11 +9,11 @@ public class TestClient {
     private TestClient() {}
 
     public static void main(String[] args) {
-
         String host = (args.length < 1) ? null : args[0];
         try {
-            Registry registry = LocateRegistry.getRegistry(host);
-            MembershipService stub = (MembershipService) registry.lookup("MembershipService");
+            Registry registry = LocateRegistry.getRegistry();
+            System.out.println("Looking up " + host);
+            MembershipService stub = (MembershipService) registry.lookup(host);
             stub.join();
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());

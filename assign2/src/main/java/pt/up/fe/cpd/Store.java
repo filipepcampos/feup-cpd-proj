@@ -42,11 +42,11 @@ public class Store extends Node implements KeyValueStore {
 
         Store store = new Store(nodeId, storagePort);
         try {
-            System.setProperty("java.rmi.server.hostname", nodeId); // TODO: I'm not 100% sure if this is what we should do
-            MembershipService stub = (MembershipService) UnicastRemoteObject.exportObject(store, 0); // TODO: change port?
+            MembershipService stub = (MembershipService) UnicastRemoteObject.exportObject(store, 0);
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.getRegistry();
-            registry.bind("MembershipService", stub);
+            System.out.println("Binding to " + nodeId);
+            registry.bind(nodeId, stub);
 
             System.err.println("Server ready");
         } catch (Exception e) {
