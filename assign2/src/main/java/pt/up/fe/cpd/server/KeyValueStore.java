@@ -1,4 +1,4 @@
-package pt.up.fe.cpd;
+package pt.up.fe.cpd.server;
 
 public interface KeyValueStore {
     /**

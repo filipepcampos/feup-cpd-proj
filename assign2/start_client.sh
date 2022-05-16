@@ -1,1 +1,1 @@
-java -classpath ./build/classes/java/main pt.up.fe.cpd.TestClient
+java -classpath ./build/classes/java/main pt.up.fe.cpd.client.TestClient

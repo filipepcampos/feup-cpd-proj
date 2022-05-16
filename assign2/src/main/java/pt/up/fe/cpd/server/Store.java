@@ -1,17 +1,12 @@
-package pt.up.fe.cpd;
+package pt.up.fe.cpd.server;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.List;
-import java.util.ArrayList;
 
 public class Store extends Node implements KeyValueStore {
-    private List<Store> storeList;
-
-    public Store(String nodeId, String storagePort) {
-        super(nodeId, storagePort);
-        this.storeList = new ArrayList<>();
+    public Store(String multicastIp, int multicastPort, String nodeId, int storagePort) {
+        super(multicastIp, multicastPort, nodeId, storagePort);
     }
 
     @Override
@@ -37,15 +32,16 @@ public class Store extends Node implements KeyValueStore {
 
         String multicastIP = args[0];
         String multicastPort = args[1];
-        String nodeId = args[2];
+        String nodeId = args[2]; // TODO: Use correct format
         String storagePort = args[3];
 
-        Store store = new Store(nodeId, storagePort);
+        System.out.println("["+nodeId+"] Store:: creating new Store (" + multicastIP + ", " + multicastPort + ", " + storagePort + ") ");
+
+        Store store = new Store(multicastIP, Integer.parseInt(multicastPort), nodeId, Integer.parseInt(storagePort));
         try {
             MembershipService stub = (MembershipService) UnicastRemoteObject.exportObject(store, 0);
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.getRegistry();
-            System.out.println("Binding to " + nodeId);
             registry.bind(nodeId, stub);
 
             System.err.println("Server ready");

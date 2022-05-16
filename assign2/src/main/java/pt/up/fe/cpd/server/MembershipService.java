@@ -1,4 +1,4 @@
-package pt.up.fe.cpd;
+package pt.up.fe.cpd.server;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
