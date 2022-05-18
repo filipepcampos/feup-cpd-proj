@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
 import java.lang.InterruptedException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.security.MessageDigest;
@@ -74,16 +77,31 @@ public class Node implements MembershipService {
         [After joining the cluster the node should probably start listening to the Multicast Address for 1 second appart MEMBERSHIP messages]
         */
 
-        printDebugInfo("Joined");
+        printDebugInfo("Trying to join");
         MulticastMessage message = new MulticastMessage(MembershipEvent.JOIN, this.nodeIdString, this.membershipCounter, this.address.getHostAddress(), this.storagePort);
         try {
-            executor.execute(new MembershipInformationListener());
-            message.send(this.multicastAddress, this.multicastPort);
+            for (int i = 0; i < 3; ++i) {
+                Future<Boolean> futureResult = executor.submit(new MembershipInformationListener());
+                message.send(this.multicastAddress, this.multicastPort);
+                printDebugInfo("Multicast message sent");
+                Boolean joinedSuccessfully = false;
+                try {
+                    joinedSuccessfully = futureResult.get();
+                } catch (InterruptedException e){
+                    e.printStackTrace();
+                } catch (ExecutionException e){
+                    e.printStackTrace();
+                }
+                printDebugInfo("joinedSuccessfully? " + joinedSuccessfully);
+                
+                if (joinedSuccessfully) {
+                    break;
+                }
+            }
         } catch (IOException e) {
-            // TODO:
-            System.out.println(e.getCause() + " " + e.getMessage());
             e.printStackTrace();
         }
+
         this.connected = true;
         executor.execute(new MulticastListener());
     }
@@ -132,7 +150,7 @@ public class Node implements MembershipService {
                     case 0: // Joining
                         executor.execute(new MembershipInformationSender(receivedAddress, receivedPort));
                         Node newNode = new Node(multicastAddress.getHostAddress(), multicastPort, receivedAddress, receivedPort);
-                        nodeList.add(newNode);
+                        nodeList.add(newNode);      // TODO: Don't add Node if Node is already in the nodeList (implement equals)
                         log.addEntry(new MembershipLogEntry(newNode.getNodeId(), receivedCounter));
                         break;
                     case 1: // Leaving
@@ -189,16 +207,14 @@ public class Node implements MembershipService {
         }
     }
 
-    private class MembershipInformationListener implements Runnable {
-
+    private class MembershipInformationListener implements Callable<Boolean> {
         @Override
-        public void run(){
+        public Boolean call(){
             TCPListener listener;
             try {
                 listener = new TCPListener(address, storagePort);
             } catch (IOException e) {
-                // TODO: IDK
-                return;
+                return false;
             }
             printDebugInfo("Listening for TCP membership info");
             for(int i = 0; i < 3; ++i){
@@ -208,12 +224,16 @@ public class Node implements MembershipService {
                     printDebugInfo("TCP membership message received: " + message);
                 } catch(SocketTimeoutException e) {
                     printDebugInfo("CONNECTION TIMED OUT");
+                    listener.close();
+                    return false;
                 } catch(IOException e){
                     printDebugInfo("GOT IOEXCEPTION");
-                } catch(Exception e){
-                    printDebugInfo("GOT SOME OTHER EXCEPTION");
+                    listener.close();
+                    return false;
                 }
             }
+            listener.close();
+            return true;
         }
     }
 

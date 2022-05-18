@@ -15,7 +15,9 @@ public class MembershipLog {
         return entries;
     }
 
-    public void addEntry(MembershipLogEntry entry){
+    public void addEntry(MembershipLogEntry entry) {
+        if (entries.contains(entry)) return;
+
         if(this.entries.size() >= 32) {
             this.entries.removeFirst();
         }
@@ -24,6 +26,6 @@ public class MembershipLog {
 
     @Override
     public String toString() {
-        return entries.stream().map(e -> e.toString()).collect(Collectors.joining(","));
+        return entries.stream().map(e -> e.toString()).collect(Collectors.joining(", "));
     }
 }

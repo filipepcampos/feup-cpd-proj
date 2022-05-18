@@ -1,5 +1,7 @@
 package pt.up.fe.cpd.server;
 
+import java.util.Arrays;
+
 public class MembershipLogEntry {
     byte[] nodeId;
     int membershipCounter;
@@ -20,5 +22,13 @@ public class MembershipLogEntry {
     @Override
     public String toString(){
         return MembershipUtils.parseNodeId(this.nodeId) + " " + this.membershipCounter;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof MembershipLogEntry)) return false;
+        MembershipLogEntry entry = (MembershipLogEntry) obj;
+        return Arrays.equals(this.nodeId, entry.getNodeId()) && entry.getMembershipCounter() == this.membershipCounter;
     }
 }
