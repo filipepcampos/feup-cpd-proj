@@ -11,50 +11,48 @@ import java.lang.InterruptedException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import pt.up.fe.cpd.networking.TCPListener;
 
 public class Node implements MembershipService {
     private List<Node> nodeList;
+    private MembershipLog log;
     private InetAddress multicastAddress;
     private int multicastPort;
-    private byte[] nodeId;
-    private String nodeIdString;
+    private InetAddress address;
     private int storagePort;
-    private int membershipCounter;
-    private ExecutorService executor;
-    private Boolean connected;
 
-    public Node(String multicastAddress, int multicastPort, String nodeId, int storagePort) {
+    private byte[] nodeId;              // Hashed address
+    private String nodeIdString;        // Printable hashed address
+    
+    private int membershipCounter;
+    private ExecutorService executor;   // ThreadPool
+    private Boolean connected;          // TODO: Change to enum
+
+    public Node(String multicastAddress, int multicastPort, String address, int storagePort) {
         try {
             this.multicastAddress = InetAddress.getByName(multicastAddress);
+            this.address = InetAddress.getByName(address);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
         this.connected = false;
         this.multicastPort = multicastPort;
+        this.storagePort = storagePort;
+        this.membershipCounter = 0; // TODO: Write/Read from file
+        this.nodeList = new ArrayList<>();
+        this.log = new MembershipLog();
+        this.executor = Executors.newFixedThreadPool(8);
 
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");    
-            this.nodeId = digest.digest(nodeId.getBytes(StandardCharsets.UTF_8));
+            this.nodeId = digest.digest(address.getBytes(StandardCharsets.UTF_8));
         } catch(NoSuchAlgorithmException e){
             e.printStackTrace();
             // TODO: What to do
         }
-        this.nodeIdString = parseNodeId();
-
-        this.storagePort = storagePort;
-        this.membershipCounter = 0; // TODO: Write/Read from file
-        this.nodeList = new ArrayList<>();
-        
-        this.executor = Executors.newFixedThreadPool(8);
-    }
-
-    private String parseNodeId() {
-        StringBuilder result = new StringBuilder();
-        for (byte b : this.nodeId) {
-            result.append(String.format("%02X", b));
-        }
-        return result.toString();
+        this.nodeIdString = MembershipUtils.parseNodeId(this.nodeId);
     }
 
     public byte[] getNodeId() {
@@ -76,8 +74,8 @@ public class Node implements MembershipService {
         [After joining the cluster the node should probably start listening to the Multicast Address for 1 second appart MEMBERSHIP messages]
         */
 
-        printDebugInfo("join");
-        MulticastMessage message = new MulticastMessage(MembershipEvent.JOIN, this.nodeIdString, this.membershipCounter);
+        printDebugInfo("Joined");
+        MulticastMessage message = new MulticastMessage(MembershipEvent.JOIN, this.nodeIdString, this.membershipCounter, this.address.getHostAddress(), this.storagePort);
         try {
             executor.execute(new MembershipInformationListener());
             message.send(this.multicastAddress, this.multicastPort);
@@ -122,10 +120,26 @@ public class Node implements MembershipService {
                     return;
                 }
                 String received = new String(packet.getData(), 0, packet.getLength());
-                printDebugInfo("receivedmulticast " + received);
-                executor.execute(new MembershipInformationSender());
+                printDebugInfo("Multicast message received: " + received);
                 
+                String[] splitString = received.split(" ");
+                String receivedNodeId = splitString[1];
+                int receivedCounter = Integer.valueOf(splitString[2]);
+                String receivedAddress = splitString[3];
+                int receivedPort = Integer.valueOf(splitString[4]);
                 
+                switch(receivedCounter % 2){
+                    case 0: // Joining
+                        executor.execute(new MembershipInformationSender(receivedAddress, receivedPort));
+                        Node newNode = new Node(multicastAddress.getHostAddress(), multicastPort, receivedAddress, receivedPort);
+                        nodeList.add(newNode);
+                        log.addEntry(new MembershipLogEntry(newNode.getNodeId(), receivedCounter));
+                        break;
+                    case 1: // Leaving
+                        break;
+                    // etc...
+                }
+
                 // TODO: Update the node list
             }
             
@@ -142,6 +156,18 @@ public class Node implements MembershipService {
     }
 
     private class MembershipInformationSender implements Runnable {
+        private InetAddress address;
+        private int port;
+
+        public MembershipInformationSender(String address, int port){
+            try {
+                this.address = InetAddress.getByName(address);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+            this.port = port;
+        }
+        
         @Override
         public void run(){
             int minWait = 50;
@@ -152,14 +178,42 @@ public class Node implements MembershipService {
             } catch (InterruptedException e) { // TODO: Ver melhor
                 return;
             }
-            printDebugInfo("sending TCP membership info (waited " + randomNum + " ms)");
+            printDebugInfo("Sending TCP membership info (waited " + randomNum + " ms)");
+            MembershipInformationMessageSender sender = new MembershipInformationMessageSender(this.address, this.port);
+            try {
+                sender.send(nodeList, log);
+            } catch (IOException e) {
+                return;     // TODO: Handle it better
+            }
+            
         }
     }
 
     private class MembershipInformationListener implements Runnable {
+
         @Override
         public void run(){
-            printDebugInfo("listening for TCP membership info");
+            TCPListener listener;
+            try {
+                listener = new TCPListener(address, storagePort);
+            } catch (IOException e) {
+                // TODO: IDK
+                return;
+            }
+            printDebugInfo("Listening for TCP membership info");
+            for(int i = 0; i < 3; ++i){
+                String message;
+                try {
+                    message = listener.receive();
+                    printDebugInfo("TCP membership message received: " + message);
+                } catch(SocketTimeoutException e) {
+                    printDebugInfo("CONNECTION TIMED OUT");
+                } catch(IOException e){
+                    printDebugInfo("GOT IOEXCEPTION");
+                } catch(Exception e){
+                    printDebugInfo("GOT SOME OTHER EXCEPTION");
+                }
+            }
         }
     }
 
@@ -172,5 +226,9 @@ public class Node implements MembershipService {
 
     private void printDebugInfo(String message){
         System.out.println("[" + nodeIdString.substring(0, 5) + "] " + message);
+    }
+
+    public String toString() {
+        return this.address.getHostAddress() + " " + this.storagePort;
     }
 }
