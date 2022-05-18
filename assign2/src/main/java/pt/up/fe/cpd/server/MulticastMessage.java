@@ -20,9 +20,7 @@ public class MulticastMessage {
 
         byte[] buf = this.buildBuffer();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastAddress, port);
-        System.out.println("["+nodeId+"] MulticastMessage::sending " + event + " message.");
         socket.send(packet);
-        System.out.println("["+nodeId+"] MulticastMessage::message sent.");
         socket.close();
     }
 
