@@ -19,7 +19,8 @@ public class TestClient {
         String operation = args[1];
 
         switch(operation){
-            case "join": join(host);
+            case "join": join(host); break;
+            case "leave": leave(host); break;
         }
     }
 
@@ -29,6 +30,18 @@ public class TestClient {
             System.out.println("Locating host " + host);
             MembershipService stub = (MembershipService) registry.lookup(host);
             stub.join();
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+    
+    public static void leave(String host){
+        try {
+            Registry registry = LocateRegistry.getRegistry();
+            System.out.println("Locating host " + host);
+            MembershipService stub = (MembershipService) registry.lookup(host);
+            stub.leave();
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();

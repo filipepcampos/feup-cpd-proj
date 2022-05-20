@@ -33,9 +33,14 @@ public class Node implements MembershipService {
     
     private int membershipCounter;
     private ExecutorService executor;   // ThreadPool
-    private Boolean connected;          // TODO: Change to enum
+    private ConnectionStatus connectionStatus;
 
     public Node(String multicastAddress, int multicastPort, String address, int storagePort) {
+
+        this.nodeList = new HashSet<>();
+        this.nodeList.add(new NodeInfo(address, storagePort));
+        this.log = new MembershipLog();
+
         try {
             this.multicastAddress = InetAddress.getByName(multicastAddress);
             this.address = InetAddress.getByName(address);
@@ -43,14 +48,8 @@ public class Node implements MembershipService {
             e.printStackTrace();
         }
 
-        this.connected = false;
         this.multicastPort = multicastPort;
         this.storagePort = storagePort;
-        this.membershipCounter = 0; // TODO: Write/Read from file
-        this.nodeList = new HashSet<>();
-        this.nodeList.add(new NodeInfo(address, storagePort));
-        this.log = new MembershipLog();
-        this.executor = Executors.newFixedThreadPool(8);
 
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");    
@@ -59,8 +58,11 @@ public class Node implements MembershipService {
             e.printStackTrace();
             // TODO: What to do
         }
-
         this.nodeIdString = MembershipUtils.parseNodeId(this.nodeId);
+
+        this.membershipCounter = 0; // TODO: Write/Read from file
+        this.executor = Executors.newFixedThreadPool(8);
+        this.connectionStatus = ConnectionStatus.DISCONNECTED;
     }
 
     public byte[] getNodeId() {
@@ -82,6 +84,9 @@ public class Node implements MembershipService {
         [After joining the cluster the node should probably start listening to the Multicast Address for 1 second appart MEMBERSHIP messages]
         */
 
+        if (!(this.connectionStatus == ConnectionStatus.DISCONNECTED)) return;
+
+        this.connectionStatus = ConnectionStatus.CONNECTING;
         printDebugInfo("Trying to join");
         MulticastMessage message = new MulticastMessage(MembershipEvent.JOIN, this.membershipCounter, this.address.getHostAddress(), this.storagePort);
         try {
@@ -106,8 +111,9 @@ public class Node implements MembershipService {
             e.printStackTrace();
         }
 
-        this.connected = true;
+        this.connectionStatus = ConnectionStatus.CONNECTED;
         this.log.addEntry(new MembershipLogEntry(this.nodeId, this.membershipCounter));
+        this.membershipCounter++;
         executor.execute(new MulticastListener());
     }
 
@@ -116,7 +122,21 @@ public class Node implements MembershipService {
         - Multicast LEAVE message
         - Update membership counter
         */
-        printDebugInfo("leave");
+
+        printDebugInfo("Leaving");
+
+        if (this.connectionStatus == ConnectionStatus.CONNECTED) {
+            this.connectionStatus = ConnectionStatus.DISCONNECTING;
+            MulticastMessage message = new MulticastMessage(MembershipEvent.LEAVE, this.membershipCounter, this.address.getHostAddress(), this.storagePort);
+            try {
+                message.send(this.multicastAddress, this.multicastPort);
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+            this.membershipCounter++;
+            this.connectionStatus = ConnectionStatus.DISCONNECTED;
+        }
     }
 
     private class MulticastListener implements Runnable {
@@ -133,7 +153,7 @@ public class Node implements MembershipService {
             }
 
             byte[] buf = new byte[1024];
-            while (connected) {
+            while (connectionStatus == ConnectionStatus.CONNECTED) {
                 DatagramPacket packet = new DatagramPacket(buf, 1024); // TODO: Try out of loop
                 try {
                     socket.receive(packet);
@@ -144,24 +164,28 @@ public class Node implements MembershipService {
                 }
 
                 String received = new String(packet.getData(), 0, packet.getLength());
-                
-                printDebugInfo("Multicast message received: " + received);
-                
                 String[] splitString = received.split(" ");
                 String receivedAddress = splitString[1];
                 int receivedPort = Integer.valueOf(splitString[2]);
                 int receivedCounter = Integer.valueOf(splitString[3]);
+                NodeInfo nodeInfo = new NodeInfo(receivedAddress, receivedPort);
+                
+                if (receivedAddress.equals(address.getHostAddress()) && receivedPort == storagePort) {
+                    continue;
+                }
+
+                printDebugInfo("Multicast message received: " + received);
                 
                 switch(receivedCounter % 2){
                     case 0: // Joining
                         executor.execute(new MembershipInformationSender(receivedAddress, receivedPort));
-                        NodeInfo newNodeInfo = new NodeInfo(receivedAddress, receivedPort);
-                        nodeList.add(newNodeInfo);
-                        log.addEntry(new MembershipLogEntry(newNodeInfo.getNodeId(), receivedCounter));
+                        nodeList.add(nodeInfo);
+                        log.addEntry(new MembershipLogEntry(nodeInfo.getNodeId(), receivedCounter));
                         break;
                     case 1: // Leaving
+                        nodeList.remove(nodeInfo);
+                        log.addEntry(new MembershipLogEntry(nodeInfo.getNodeId(), receivedCounter));
                         break;
-                    // etc...
                 }
 
                 // TODO: Update the node list
@@ -248,9 +272,7 @@ public class Node implements MembershipService {
                         byte[] receivedNodeId           = MembershipUtils.parseNodeIdString(splitLog[0]);
                         int receivedMembershipCounter   = Integer.valueOf(splitLog[1]);
                         newLog.addEntry(new MembershipLogEntry(receivedNodeId, receivedMembershipCounter));
-                    }
-                    // TODO: Merge logs
-                    
+                    }                    
                 } catch(SocketTimeoutException e) {
                     printDebugInfo("Connection timeout");
                     listener.close();

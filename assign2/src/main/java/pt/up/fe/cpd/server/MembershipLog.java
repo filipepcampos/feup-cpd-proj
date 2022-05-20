@@ -3,6 +3,7 @@ package pt.up.fe.cpd.server;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.LinkedList;
+import java.util.Arrays;
 
 public class MembershipLog {
     private LinkedList<MembershipLogEntry> entries;
@@ -16,9 +17,31 @@ public class MembershipLog {
     }
 
     public void addEntry(MembershipLogEntry entry) {
-        if (entries.contains(entry)) return;
+        /*
+        Merging Rules
+        - Rule 1: If the event is already in the local log, skip it
+        - Rule 2: If the event is older (you should use the membership count) than the event for that member in the local log, skip it
+        - Rule 3: If the event is new, i.e. there is no event in the local log for that member, add that event to the tail of the log
+            (assuming that events at the tail are the most recent)
+        - Rule 4: If the event is newer than the event for that member in the local log, remove the event for that member from the local
+            log, and add the newer event at the tail of the log (i.e. as if it was a new event)
+        */
 
-        if(this.entries.size() >= 32) {
+        if (entries.contains(entry)) return;
+        else {
+            for (MembershipLogEntry compareEntry : entries) {
+                if (Arrays.equals(compareEntry.getNodeId(), entry.getNodeId())) {
+                    if (entry.getMembershipCounter() < compareEntry.getMembershipCounter()) return;
+                    if (entry.getMembershipCounter() > compareEntry.getMembershipCounter()) {
+                        this.entries.remove(compareEntry);
+                        this.entries.add(entry);
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (this.entries.size() >= 32) {
             this.entries.removeFirst();
         }
         this.entries.add(entry);
