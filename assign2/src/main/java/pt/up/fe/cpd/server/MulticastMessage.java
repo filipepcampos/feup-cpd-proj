@@ -5,25 +5,23 @@ import java.net.*;
 
 public class MulticastMessage {
     MembershipEvent event;
-    String nodeId;
     int membershipCounter;
     String address;
     int port;
 
-    public MulticastMessage(MembershipEvent event, String nodeId, int membershipCounter, String address, int port){
+    public MulticastMessage(MembershipEvent event, int membershipCounter, String address, int port){
         this.event = event;
-        this.nodeId = nodeId;
         this.membershipCounter = membershipCounter;
         this.address = address;
         this.port = port;
     }
 
-    public void send(InetAddress multicastAddress, int port) throws IOException {
+    public void send(InetAddress multicastAddress, int multicastPort) throws IOException {
         MulticastSocket socket = new MulticastSocket(port);
         socket.joinGroup(multicastAddress);
 
         byte[] buf = this.buildBuffer();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastAddress, port);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastAddress, multicastPort);
         socket.send(packet);
         socket.close();
     }
@@ -31,10 +29,9 @@ public class MulticastMessage {
     private byte[] buildBuffer(){
         StringBuilder builder = new StringBuilder();
         builder.append(event).append(" ")
-            .append(nodeId).append(" ")
-            .append(membershipCounter).append(" ")
             .append(address).append(" ")
-            .append(port);
+            .append(port).append(" ")
+            .append(membershipCounter);
         return builder.toString().getBytes();
     }
 }

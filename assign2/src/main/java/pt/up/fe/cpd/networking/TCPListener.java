@@ -25,7 +25,7 @@ public class TCPListener {
     public String receive() throws IOException {
         Socket socket = this.serverSocket.accept();
         BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        String input = inputStream.lines().collect(Collectors.joining(" "));
+        String input = inputStream.lines().collect(Collectors.joining("\n"));
         socket.close();
         return input;
     }

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import pt.up.fe.cpd.networking.TCPListener;
 
 public class Node implements MembershipService {
-    private List<Node> nodeList;
+    private HashSet<NodeInfo> nodeList;
     private MembershipLog log;
     private InetAddress multicastAddress;
     private int multicastPort;
@@ -40,11 +42,13 @@ public class Node implements MembershipService {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+
         this.connected = false;
         this.multicastPort = multicastPort;
         this.storagePort = storagePort;
         this.membershipCounter = 0; // TODO: Write/Read from file
-        this.nodeList = new ArrayList<>();
+        this.nodeList = new HashSet<>();
+        this.nodeList.add(new NodeInfo(address, storagePort));
         this.log = new MembershipLog();
         this.executor = Executors.newFixedThreadPool(8);
 
@@ -55,6 +59,7 @@ public class Node implements MembershipService {
             e.printStackTrace();
             // TODO: What to do
         }
+
         this.nodeIdString = MembershipUtils.parseNodeId(this.nodeId);
     }
 
@@ -78,7 +83,7 @@ public class Node implements MembershipService {
         */
 
         printDebugInfo("Trying to join");
-        MulticastMessage message = new MulticastMessage(MembershipEvent.JOIN, this.nodeIdString, this.membershipCounter, this.address.getHostAddress(), this.storagePort);
+        MulticastMessage message = new MulticastMessage(MembershipEvent.JOIN, this.membershipCounter, this.address.getHostAddress(), this.storagePort);
         try {
             for (int i = 0; i < 3; ++i) {
                 Future<Boolean> futureResult = executor.submit(new MembershipInformationListener());
@@ -92,7 +97,6 @@ public class Node implements MembershipService {
                 } catch (ExecutionException e){
                     e.printStackTrace();
                 }
-                printDebugInfo("joinedSuccessfully? " + joinedSuccessfully);
                 
                 if (joinedSuccessfully) {
                     break;
@@ -103,6 +107,7 @@ public class Node implements MembershipService {
         }
 
         this.connected = true;
+        this.log.addEntry(new MembershipLogEntry(this.nodeId, this.membershipCounter));
         executor.execute(new MulticastListener());
     }
 
@@ -137,21 +142,22 @@ public class Node implements MembershipService {
                     e.printStackTrace();
                     return;
                 }
+
                 String received = new String(packet.getData(), 0, packet.getLength());
+                
                 printDebugInfo("Multicast message received: " + received);
                 
                 String[] splitString = received.split(" ");
-                String receivedNodeId = splitString[1];
-                int receivedCounter = Integer.valueOf(splitString[2]);
-                String receivedAddress = splitString[3];
-                int receivedPort = Integer.valueOf(splitString[4]);
+                String receivedAddress = splitString[1];
+                int receivedPort = Integer.valueOf(splitString[2]);
+                int receivedCounter = Integer.valueOf(splitString[3]);
                 
                 switch(receivedCounter % 2){
                     case 0: // Joining
                         executor.execute(new MembershipInformationSender(receivedAddress, receivedPort));
-                        Node newNode = new Node(multicastAddress.getHostAddress(), multicastPort, receivedAddress, receivedPort);
-                        nodeList.add(newNode);      // TODO: Don't add Node if Node is already in the nodeList (implement equals)
-                        log.addEntry(new MembershipLogEntry(newNode.getNodeId(), receivedCounter));
+                        NodeInfo newNodeInfo = new NodeInfo(receivedAddress, receivedPort);
+                        nodeList.add(newNodeInfo);
+                        log.addEntry(new MembershipLogEntry(newNodeInfo.getNodeId(), receivedCounter));
                         break;
                     case 1: // Leaving
                         break;
@@ -216,23 +222,45 @@ public class Node implements MembershipService {
             } catch (IOException e) {
                 return false;
             }
-            printDebugInfo("Listening for TCP membership info");
+
             for(int i = 0; i < 3; ++i){
-                String message;
                 try {
-                    message = listener.receive();
+                    String message = listener.receive();
                     printDebugInfo("TCP membership message received: " + message);
+
+                    String[] splitMessage = message.split("\n");
+                    if(splitMessage[0] != "MEMBERSHIP_INFORMATION"){
+                        // TODO: Error
+                    }
+                    
+                    String[] nodeListInfo = splitMessage[2].split(", ");
+                    for(String nodeInfo : nodeListInfo){
+                        String[] sliptNodeInfo  = nodeInfo.split(" ");
+                        String receivedAddress  = sliptNodeInfo[0];
+                        int receivedPort        = Integer.valueOf(sliptNodeInfo[1]);
+                        nodeList.add(new NodeInfo(receivedAddress, receivedPort));
+                    }
+
+                    MembershipLog newLog = new MembershipLog();
+                    String[] logInfo = splitMessage[3].split(", ");
+                    for(String log : logInfo){
+                        String[] splitLog               = log.split(" ");
+                        byte[] receivedNodeId           = MembershipUtils.parseNodeIdString(splitLog[0]);
+                        int receivedMembershipCounter   = Integer.valueOf(splitLog[1]);
+                        newLog.addEntry(new MembershipLogEntry(receivedNodeId, receivedMembershipCounter));
+                    }
+                    // TODO: Merge logs
+                    
                 } catch(SocketTimeoutException e) {
-                    printDebugInfo("CONNECTION TIMED OUT");
+                    printDebugInfo("Connection timeout");
                     listener.close();
                     return false;
                 } catch(IOException e){
-                    printDebugInfo("GOT IOEXCEPTION");
                     listener.close();
                     return false;
                 }
             }
-            listener.close();
+            listener.close();  
             return true;
         }
     }
