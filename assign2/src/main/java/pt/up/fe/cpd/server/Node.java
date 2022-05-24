@@ -253,26 +253,25 @@ public class Node implements MembershipService {
                     printDebugInfo("TCP membership message received: " + message);
 
                     String[] splitMessage = message.split("\n");
-                    if(splitMessage[0] != "MEMBERSHIP_INFORMATION"){
+                    if(!splitMessage[0].equals("MEMBERSHIP_INFORMATION")){
                         // TODO: Error
                     }
                     
                     String[] nodeListInfo = splitMessage[2].split(", ");
                     for(String nodeInfo : nodeListInfo){
-                        String[] sliptNodeInfo  = nodeInfo.split(" ");
-                        String receivedAddress  = sliptNodeInfo[0];
-                        int receivedPort        = Integer.valueOf(sliptNodeInfo[1]);
+                        String[] splitNodeInfo  = nodeInfo.split(" ");
+                        String receivedAddress  = splitNodeInfo[0];
+                        int receivedPort        = Integer.valueOf(splitNodeInfo[1]);
                         nodeList.add(new NodeInfo(receivedAddress, receivedPort));
                     }
 
-                    MembershipLog newLog = new MembershipLog();
                     String[] logInfo = splitMessage[3].split(", ");
-                    for(String log : logInfo){
-                        String[] splitLog               = log.split(" ");
+                    for(String logData : logInfo){
+                        String[] splitLog               = logData.split(" ");
                         byte[] receivedNodeId           = MembershipUtils.parseNodeIdString(splitLog[0]);
                         int receivedMembershipCounter   = Integer.valueOf(splitLog[1]);
-                        newLog.addEntry(new MembershipLogEntry(receivedNodeId, receivedMembershipCounter));
-                    }                    
+                        log.addEntry(new MembershipLogEntry(receivedNodeId, receivedMembershipCounter));
+                    }
                 } catch(SocketTimeoutException e) {
                     printDebugInfo("Connection timeout");
                     listener.close();
@@ -295,7 +294,7 @@ public class Node implements MembershipService {
     }
 
     private void printDebugInfo(String message){
-        System.out.println("[" + nodeIdString.substring(0, 5) + "] " + message);
+        System.out.println("[" + this.address.getHostAddress() + "/" + nodeIdString.substring(0, 5) + "] " + message);
     }
 
     public String toString() {
