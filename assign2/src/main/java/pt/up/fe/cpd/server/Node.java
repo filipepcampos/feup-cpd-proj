@@ -2,9 +2,6 @@ package pt.up.fe.cpd.server;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -19,6 +16,8 @@ import java.security.NoSuchAlgorithmException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import pt.up.fe.cpd.networking.TCPListener;
+import pt.up.fe.cpd.utils.Pair;
+import java.util.stream.Collectors;
 
 public class Node implements MembershipService {
     private HashSet<NodeInfo> nodeList;
@@ -115,6 +114,7 @@ public class Node implements MembershipService {
         this.log.addEntry(new MembershipLogEntry(this.nodeId, this.membershipCounter));
         this.membershipCounter++;
         executor.execute(new MulticastListener());
+        executor.execute(new MulticastMembershipSender());
     }
 
     public void leave() {
@@ -165,30 +165,21 @@ public class Node implements MembershipService {
 
                 String received = new String(packet.getData(), 0, packet.getLength());
                 String[] splitString = received.split(" ");
-                String receivedAddress = splitString[1];
-                int receivedPort = Integer.valueOf(splitString[2]);
-                int receivedCounter = Integer.valueOf(splitString[3]);
-                NodeInfo nodeInfo = new NodeInfo(receivedAddress, receivedPort);
-                
-                if (receivedAddress.equals(address.getHostAddress()) && receivedPort == storagePort) {
-                    continue;
-                }
+                String eventType = splitString[0];
 
                 printDebugInfo("Multicast message received: " + received);
                 
-                switch(receivedCounter % 2){
-                    case 0: // Joining
-                        executor.execute(new MembershipInformationSender(receivedAddress, receivedPort));
-                        nodeList.add(nodeInfo);
-                        log.addEntry(new MembershipLogEntry(nodeInfo.getNodeId(), receivedCounter));
+                switch(eventType){
+                    case "JOIN": // Joining
+                        handleJoin(received);
                         break;
-                    case 1: // Leaving
-                        nodeList.remove(nodeInfo);
-                        log.addEntry(new MembershipLogEntry(nodeInfo.getNodeId(), receivedCounter));
+                    case "LEAVE": // Leaving
+                        handleLeave(received);
                         break;
-                }
+                    case "CONFIRM": // TODO: Deal with membership info
 
-                // TODO: Update the node list
+                        break;
+                } 
             }
             
             try {
@@ -200,6 +191,74 @@ public class Node implements MembershipService {
             }
             
             socket.close();
+        }
+
+        private Pair<NodeInfo, Integer> parseJoinLeaveMessage(String receivedData){
+            String[] splitString = receivedData.split(" ");
+            String receivedAddress = splitString[1];
+            int receivedPort = Integer.valueOf(splitString[2]);
+            int receivedCounter = Integer.valueOf(splitString[3]);
+            return new Pair<>(new NodeInfo(receivedAddress, receivedPort), receivedCounter);
+        }
+
+        private void handleJoin(String receivedData){
+            Pair<NodeInfo, Integer> parsedData = parseJoinLeaveMessage(receivedData);
+            NodeInfo nodeInfo = parsedData.first;
+            int receivedCounter = parsedData.second;
+
+            if (nodeInfo.getAddress().equals(address.getHostAddress()) && nodeInfo.getStoragePort() == storagePort) {
+                return;
+            }
+
+            executor.execute(new MembershipInformationSender(nodeInfo.getAddress(), nodeInfo.getStoragePort()));
+            nodeList.add(nodeInfo);
+            log.addEntry(new MembershipLogEntry(nodeInfo.getNodeId(), receivedCounter));
+        }
+
+        private void handleLeave(String receivedData){
+            Pair<NodeInfo, Integer> parsedData = parseJoinLeaveMessage(receivedData);
+            NodeInfo nodeInfo = parsedData.first;
+            int receivedCounter = parsedData.second;
+
+            if (nodeInfo.getAddress().equals(address.getHostAddress()) && nodeInfo.getStoragePort() == storagePort) {
+                return;
+            }
+
+            nodeList.remove(nodeInfo);
+            log.addEntry(new MembershipLogEntry(nodeInfo.getNodeId(), receivedCounter));
+        }
+
+        private void handleConfirm(){
+
+        }
+    }
+
+    private class MulticastMembershipSender implements Runnable {
+        @Override
+        public void run() {
+            while(connectionStatus == ConnectionStatus.CONNECTED){
+                try {
+                    TimeUnit.MILLISECONDS.sleep(nodeList.size());
+                } catch (InterruptedException e) { // TODO: Ver melhor
+                    return;
+                }
+
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder
+                    .append(nodeList.stream().map(n -> n.toString()).collect(Collectors.joining(", ")))
+                    .append('\n')
+                    .append(log.toString());
+
+                byte[] data = stringBuilder.toString().getBytes();
+                
+                MulticastMessage message = new MulticastMessage(MembershipEvent.CONFIRM, membershipCounter, address.getHostAddress(), storagePort);
+                try {
+                    message.send(multicastAddress, multicastPort, data);
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
