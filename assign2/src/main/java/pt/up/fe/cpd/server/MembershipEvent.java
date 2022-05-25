@@ -3,5 +3,5 @@ package pt.up.fe.cpd.server;
 public enum MembershipEvent {
     JOIN,
     LEAVE,
-    CONFIRM
+    MEMBERSHIP
 }

@@ -2,6 +2,7 @@ package pt.up.fe.cpd.server;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 
 public class MulticastMessage {
     MembershipEvent event;
@@ -17,26 +18,35 @@ public class MulticastMessage {
     }
 
     public void send(InetAddress multicastAddress, int multicastPort) throws IOException {
-        byte[] buf = this.buildBuffer();
-        this.send(multicastAddress, multicastPort, buf);
-    }
 
-    public void send(InetAddress multicastAddress, int multicastPort, byte[] data) throws IOException {
-        MulticastSocket socket = new MulticastSocket(port);
-        socket.joinGroup(multicastAddress);
-
-        byte[] buf = (event + data.toString()).getBytes();  // TODO: Verify if this works
-
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastAddress, multicastPort);
-        socket.send(packet);
-        socket.close();
-    }
-
-    private byte[] buildBuffer(){
         StringBuilder builder = new StringBuilder();
         builder.append(address).append(" ")
             .append(port).append(" ")
             .append(membershipCounter);
-        return builder.toString().getBytes();
+
+        this.send(multicastAddress, multicastPort, builder.toString(), "");
+    }
+
+    public void send(InetAddress multicastAddress, int multicastPort, String header, String body) throws IOException {
+        
+        MulticastSocket socket = new MulticastSocket(port);
+        socket.joinGroup(multicastAddress);
+        
+        StringBuilder message = new StringBuilder();
+        message.append(event);
+        
+        if(!header.isEmpty()){
+            message.append(" ").append(header);
+        }
+        
+        if(!body.isEmpty()){
+            message.append("\n\n").append(body);
+        }
+
+        byte[] buf = message.toString().getBytes();
+
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastAddress, multicastPort);
+        socket.send(packet);
+        socket.close();
     }
 }

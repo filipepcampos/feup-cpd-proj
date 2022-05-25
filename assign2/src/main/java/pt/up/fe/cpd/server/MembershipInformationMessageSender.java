@@ -15,7 +15,7 @@ public class MembershipInformationMessageSender extends TCPMessageSender {
     public void send(Set<NodeInfo> nodes, MembershipLog log) throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder
-            .append("MEMBERSHIP_INFORMATION\n\n")
+            .append("MEMBERSHIP\n\n")
             .append(nodes.stream().map(n -> n.toString()).collect(Collectors.joining(", ")))
             .append('\n')
             .append(log.toString());

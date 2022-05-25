@@ -3,7 +3,6 @@ package pt.up.fe.cpd.server;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.LinkedList;
-import java.util.Arrays;
 
 public class MembershipLog {
     private LinkedList<MembershipLogEntry> entries;
@@ -26,11 +25,11 @@ public class MembershipLog {
         - Rule 4: If the event is newer than the event for that member in the local log, remove the event for that member from the local
             log, and add the newer event at the tail of the log (i.e. as if it was a new event)
         */
-
+        
         if (entries.contains(entry)) return;
         else {
             for (MembershipLogEntry compareEntry : entries) {
-                if (Arrays.equals(compareEntry.getNodeId(), entry.getNodeId())) {
+                if (entry.equals(compareEntry)) {
                     if (entry.getMembershipCounter() < compareEntry.getMembershipCounter()) return;
                     if (entry.getMembershipCounter() > compareEntry.getMembershipCounter()) {
                         this.entries.remove(compareEntry);

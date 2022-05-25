@@ -1,34 +1,38 @@
 package pt.up.fe.cpd.server;
 
-import java.util.Arrays;
-
 public class MembershipLogEntry {
-    byte[] nodeId;
+    private String address;
+    private int port;
     int membershipCounter;
 
-    public MembershipLogEntry(byte[] nodeId, int membershipCounter){
-        this.nodeId = nodeId;
+    public MembershipLogEntry(String address, int port, int membershipCounter){
+        this.address = address;
+        this.port = port;
         this.membershipCounter = membershipCounter;
     }
 
-    public byte[] getNodeId() {
-        return nodeId;
+    public String getAddress() {
+        return this.address;
+    }
+
+    public int getPort() {
+        return this.port;
     }
 
     public int getMembershipCounter() {
-        return membershipCounter;
+        return this.membershipCounter;
     }
 
     @Override
     public String toString(){
-        return MembershipUtils.parseNodeId(this.nodeId) + " " + this.membershipCounter;
+        return address + ":" + port + " " + this.membershipCounter;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (!(obj instanceof MembershipLogEntry)) return false;
+        if (!(obj instanceof MembershipLogEntry)) {return false;}
         MembershipLogEntry entry = (MembershipLogEntry) obj;
-        return Arrays.equals(this.nodeId, entry.getNodeId()) && entry.getMembershipCounter() == this.membershipCounter;
+        return this.address.equals(entry.getAddress()) && this.port == entry.getPort();
     }
 }

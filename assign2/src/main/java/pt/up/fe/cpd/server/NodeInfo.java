@@ -34,7 +34,7 @@ public class NodeInfo {
     }
 
     public String toString() {
-        return this.address + " " + this.storagePort;
+        return this.address + ":" + this.storagePort;
     }
 
     @Override
