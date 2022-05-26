@@ -82,7 +82,7 @@ public class Node extends NodeInfo implements MembershipService {
         this.log.addEntry(new MembershipLogEntry(this.getAddress(), this.getStoragePort(), this.membershipCounter));
         this.membershipCounter++;
         executor.execute(new MulticastListener(this, multicastAddress, multicastPort, connection, log, nodeSet, executor));
-        executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, connection, nodeSet, log));
+        //executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, connection, nodeSet, log));
     }
 
     public void leave() {

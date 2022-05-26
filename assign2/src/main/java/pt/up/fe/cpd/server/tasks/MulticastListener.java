@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 public class MulticastListener implements Runnable {
-    private InetAddress multicastAddress;
+    final private InetAddress multicastAddress;
     final private int multicastPort;
     final private NodeInfo nodeInfo;
     final private Connection connection;
@@ -97,29 +97,33 @@ public class MulticastListener implements Runnable {
 
     private void handleJoin(String receivedData){
         Pair<NodeInfo, Integer> parsedData = parseJoinLeaveMessage(receivedData);
-        NodeInfo nodeInfo = parsedData.first;
+        NodeInfo parsedNodeInfo = parsedData.first;
         int receivedCounter = parsedData.second;
 
-        if (nodeInfo.getAddress().equals(nodeInfo.getAddress()) && nodeInfo.getStoragePort() == nodeInfo.getStoragePort()) {
+        if (parsedNodeInfo.getAddress().equals(this.nodeInfo.getAddress()) &&
+                parsedNodeInfo.getStoragePort() == this.nodeInfo.getStoragePort()) {
             return;
         }
 
-        executor.execute(new MembershipInformationSender(nodeInfo.getAddress(), nodeInfo.getStoragePort(), nodeSet, log));
-        nodeSet.add(nodeInfo);
-        log.addEntry(new MembershipLogEntry(nodeInfo.getAddress(), nodeInfo.getStoragePort(), receivedCounter));
+        System.out.println("[debug] executing membershipInfoSender");
+        executor.execute(new MembershipInformationSender(parsedNodeInfo.getAddress(), parsedNodeInfo.getStoragePort(), nodeSet, log));
+        nodeSet.add(parsedNodeInfo);
+        log.addEntry(new MembershipLogEntry(parsedNodeInfo.getAddress(), parsedNodeInfo.getStoragePort(), receivedCounter));
+        System.out.println("[debug] executing membershipInfoSender");
     }
 
     private void handleLeave(String receivedData){
         Pair<NodeInfo, Integer> parsedData = parseJoinLeaveMessage(receivedData);
-        NodeInfo nodeInfo = parsedData.first;
+        NodeInfo parsedNodeInfo = parsedData.first;
         int receivedCounter = parsedData.second;
 
-        if (nodeInfo.getAddress().equals(nodeInfo.getAddress()) && nodeInfo.getStoragePort() == nodeInfo.getStoragePort()) {
+        if (parsedNodeInfo.getAddress().equals(this.nodeInfo.getAddress()) &&
+                parsedNodeInfo.getStoragePort() == this.nodeInfo.getStoragePort()) {
             return;
         }
 
-        nodeSet.remove(nodeInfo);
-        log.addEntry(new MembershipLogEntry(nodeInfo.getAddress(), nodeInfo.getStoragePort(), receivedCounter));
+        nodeSet.remove(parsedNodeInfo);
+        log.addEntry(new MembershipLogEntry(parsedNodeInfo.getAddress(), parsedNodeInfo.getStoragePort(), receivedCounter));
     }
 
     private void handleMembership(String receivedData){
