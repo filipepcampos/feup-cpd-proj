@@ -1,5 +1,8 @@
 package pt.up.fe.cpd.server;
 
+import pt.up.fe.cpd.server.membership.MembershipService;
+import pt.up.fe.cpd.server.store.KeyValueStore;
+
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;

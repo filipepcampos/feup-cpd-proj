@@ -1,6 +1,6 @@
 package pt.up.fe.cpd.client;
 
-import pt.up.fe.cpd.server.MembershipService;
+import pt.up.fe.cpd.server.membership.MembershipService;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;

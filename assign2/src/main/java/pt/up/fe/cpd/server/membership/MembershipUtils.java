@@ -1,4 +1,4 @@
-package pt.up.fe.cpd.server;
+package pt.up.fe.cpd.server.membership;
 
 public class MembershipUtils {
     public static String parseNodeId(byte[] nodeId) {
