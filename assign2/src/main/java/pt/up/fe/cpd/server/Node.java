@@ -19,17 +19,17 @@ import pt.up.fe.cpd.networking.TCPListener;
 import pt.up.fe.cpd.utils.Pair;
 
 public class Node implements MembershipService {
-    private HashSet<NodeInfo> nodeList;
-    private MembershipLog log;
+    final private HashSet<NodeInfo> nodeList;
+    final private MembershipLog log;
     private InetAddress multicastAddress;
-    private int multicastPort;
+    final private int multicastPort;
     private InetAddress address;
-    private int storagePort;
+    final private int storagePort;
 
     private byte[] nodeId;              // Hashed address
     
     private int membershipCounter;
-    private ExecutorService executor;   // ThreadPool
+    final private ExecutorService executor;   // ThreadPool
     private ConnectionStatus connectionStatus;
 
     public Node(String multicastAddress, int multicastPort, String address, int storagePort) {
@@ -61,14 +61,6 @@ public class Node implements MembershipService {
         this.connectionStatus = ConnectionStatus.DISCONNECTED;
     }
 
-    public byte[] getNodeId() {
-        return this.nodeId;
-    }
-
-    public int getStoragePort() {
-        return this.storagePort;
-    }
-
     public void join() {
         synchronized (this.connectionStatus){
             if (this.connectionStatus != ConnectionStatus.DISCONNECTED) return;
@@ -85,12 +77,10 @@ public class Node implements MembershipService {
                 Boolean joinedSuccessfully = false;
                 try {
                     joinedSuccessfully = futureResult.get();
-                } catch (InterruptedException e){
-                    e.printStackTrace();
-                } catch (ExecutionException e){
+                } catch (InterruptedException | ExecutionException e){
                     e.printStackTrace();
                 }
-                
+
                 if (joinedSuccessfully) {
                     break;
                 }
@@ -165,7 +155,7 @@ public class Node implements MembershipService {
                 String eventType = splitString[0];
 
                 printDebugInfo("Multicast message received: " + received);
-                
+
                 switch(eventType){
                     case "JOIN": // Joining
                         handleJoin(received);
@@ -193,8 +183,8 @@ public class Node implements MembershipService {
         private Pair<NodeInfo, Integer> parseJoinLeaveMessage(String receivedData){
             String[] splitString = receivedData.split(" ");
             String receivedAddress = splitString[1];
-            int receivedPort = Integer.valueOf(splitString[2]);
-            int receivedCounter = Integer.valueOf(splitString[3]);
+            int receivedPort = Integer.parseInt(splitString[2]);
+            int receivedCounter = Integer.parseInt(splitString[3]);
             return new Pair<>(new NodeInfo(receivedAddress, receivedPort), receivedCounter);
         }
 
@@ -232,8 +222,8 @@ public class Node implements MembershipService {
                 String[] splitLog               = logData.split(" ");
                 String[] splitNodeId            = splitLog[0].split(":");
                 String receivedAddress          = splitNodeId[0];
-                int receivedPort                = Integer.valueOf(splitNodeId[1]);
-                int receivedMembershipCounter   = Integer.valueOf(splitLog[1]);
+                int receivedPort                = Integer.parseInt(splitNodeId[1]);
+                int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
                 log.addEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
             }
         }
@@ -262,7 +252,7 @@ public class Node implements MembershipService {
 
     private class MembershipInformationSender implements Runnable {
         private InetAddress address;
-        private int port;
+        final private int port;
 
         public MembershipInformationSender(String address, int port){
             try {
@@ -318,7 +308,7 @@ public class Node implements MembershipService {
                     for(String nodeInfo : nodeListInfo){
                         String[] splitNodeInfo  = nodeInfo.split(":");
                         String receivedAddress  = splitNodeInfo[0];
-                        int receivedPort        = Integer.valueOf(splitNodeInfo[1]);
+                        int receivedPort        = Integer.parseInt(splitNodeInfo[1]);
                         nodeList.add(new NodeInfo(receivedAddress, receivedPort));
                     }
 
@@ -327,8 +317,8 @@ public class Node implements MembershipService {
                         String[] splitLog               = logData.split(" ");
                         String[] splitNodeId            = splitLog[0].split(":");
                         String receivedAddress          = splitNodeId[0];
-                        int receivedPort                = Integer.valueOf(splitNodeId[1]);
-                        int receivedMembershipCounter   = Integer.valueOf(splitLog[1]);
+                        int receivedPort                = Integer.parseInt(splitNodeId[1]);
+                        int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
                         log.addEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
                     }
                 } catch(SocketTimeoutException e) {
