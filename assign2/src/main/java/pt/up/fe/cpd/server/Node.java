@@ -14,6 +14,7 @@ import pt.up.fe.cpd.server.membership.log.MembershipLog;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 import pt.up.fe.cpd.server.tasks.MembershipInformationListener;
 import pt.up.fe.cpd.server.tasks.MulticastListener;
+import pt.up.fe.cpd.server.tasks.MulticastMembershipSender;
 
 public class Node extends NodeInfo implements MembershipService {
     final private HashSet<NodeInfo> nodeSet;
@@ -21,6 +22,7 @@ public class Node extends NodeInfo implements MembershipService {
     private InetAddress multicastAddress;
     final private int multicastPort;
     private InetAddress address;
+    final private Store keyValueStore;
     
     private int membershipCounter;
     final private ExecutorService executor;   // ThreadPool
@@ -43,6 +45,7 @@ public class Node extends NodeInfo implements MembershipService {
         this.membershipCounter = 0; // TODO: Write/Read from file
         this.executor = Executors.newFixedThreadPool(8);
         this.connection = new Connection();
+        this.keyValueStore = new Store(address, storagePort);
     }
 
     public void join() {
@@ -74,14 +77,17 @@ public class Node extends NodeInfo implements MembershipService {
             e.printStackTrace();
         }
 
+        this.keyValueStore.open();
+        this.keyValueStore.receive(executor);
+        
         synchronized (this.connection){
             this.connection.setStatus(ConnectionStatus.CONNECTED);
         }
-        
+   
         this.log.addEntry(new MembershipLogEntry(this.getAddress(), this.getStoragePort(), this.membershipCounter));
         this.membershipCounter++;
         executor.execute(new MulticastListener(this, multicastAddress, multicastPort, connection, log, nodeSet, executor));
-        //executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, connection, nodeSet, log));
+        executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, connection, nodeSet, log));
     }
 
     public void leave() {
@@ -106,6 +112,7 @@ public class Node extends NodeInfo implements MembershipService {
         }
         this.membershipCounter++;
 
+        this.keyValueStore.close();
         synchronized (this.connection){
             this.connection.setStatus(ConnectionStatus.DISCONNECTED);
         }

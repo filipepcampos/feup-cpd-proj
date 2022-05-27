@@ -5,7 +5,7 @@ import java.io.OutputStream;
 import java.io.DataOutputStream;
 import java.net.*;
 
-public abstract class TCPMessageSender {
+public class TCPMessageSender {
     protected InetAddress address;
     protected int port;
 

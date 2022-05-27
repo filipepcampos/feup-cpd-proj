@@ -27,7 +27,7 @@ public class MembershipInformationListener implements Callable<Boolean> {
     public Boolean call(){
         TCPListener listener;
         try {
-            listener = new TCPListener(address, port);
+            listener = new TCPListener(address, port, 3000);
         } catch (IOException e) {
             return false;
         }

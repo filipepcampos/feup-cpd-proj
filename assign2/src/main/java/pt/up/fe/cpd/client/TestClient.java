@@ -2,26 +2,129 @@ package pt.up.fe.cpd.client;
 
 import pt.up.fe.cpd.server.membership.MembershipService;
 
+import java.net.Socket;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.MessageDigest;
+import pt.up.fe.cpd.utils.Pair;
 
+// The test client should be invoked as follows: $ java TestClient <node_ap> <operation> [<opnd>]
 public class TestClient {
-    // The test client should be invoked as follows: $ java TestClient <node_ap> <operation> [<opnd>]
 
-    private TestClient() {}
-
-    public static void main(String[] args) {
-        if(args.length != 2){
+    public static void main(String[] args) throws IOException {
+        if(args.length < 2){
             System.out.println("Invalid arguments");
             System.out.println("Usage: java TestClient <node_ap> <operation> [<opnd>]");
         }
-        String host =  args[0]; // TODO: Change node_ap
+        String node_ap =  args[0]; // TODO: Change node_ap (If the service uses RMI, this must be the IP address and the name of the remote object providing the service.)
         String operation = args[1];
 
         switch(operation){
-            case "join": join(host); break;
-            case "leave": leave(host); break;
+            case "join": join(node_ap); break;
+            case "leave": leave(node_ap); break;
+            case "get": get(node_ap, args[2]); break;
+            case "put": put(node_ap, args[2]); break;
+            case "delete": delete(node_ap, args[2]); break;
         }
+    }
+
+    public static void get(String node_ap, String key) throws IOException {
+        Pair<InetAddress, Integer> parsedNodeAp = parseNodeAp(node_ap);
+        InetAddress address = parsedNodeAp.first;
+        int port = parsedNodeAp.second;
+   
+        Socket socket = new Socket(address, port);
+
+        // Send GET request to server
+        DataOutputStream socketOutputStream = new DataOutputStream(socket.getOutputStream());
+        socketOutputStream.write(("GET " + key).getBytes("UTF-8"));
+        socketOutputStream.close();
+
+        // Transfer file
+        FileOutputStream fileOutputStream;
+        try{
+            fileOutputStream = new FileOutputStream(key); // TODO: What name should the file have
+        } catch(FileNotFoundException e){
+            System.out.println("File cannot be found.");
+            socket.close();
+            return;
+        }
+        
+        DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+        DataOutputStream outputStream = new DataOutputStream(fileOutputStream);
+
+        int count;
+        byte[] buffer = new byte[4096];
+        while((count = inputStream.read(buffer)) > 0){
+            outputStream.write(buffer, 0, count);
+        }
+        inputStream.close();
+        outputStream.close();
+        socket.close();
+    }
+
+    public static String put(String node_ap, String file_path) throws IOException {
+        Pair<InetAddress, Integer> parsedNodeAp = parseNodeAp(node_ap);
+        InetAddress address = parsedNodeAp.first;
+        int port = parsedNodeAp.second;
+        
+        byte[] key;
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");    
+            key = digest.digest(file_path.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) { // This should never happen
+            e.printStackTrace();
+            return "";
+        }
+
+        Socket socket = new Socket(address, port);
+
+        FileInputStream fileInputStream;
+        try{
+            fileInputStream = new FileInputStream(file_path);
+        } catch(FileNotFoundException e){
+            System.out.println("File " + file_path + " cannot be found.");
+            socket.close();
+            return "";
+        }
+        
+        DataInputStream inputStream = new DataInputStream(fileInputStream);
+        DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+
+        outputStream.write(("PUT " + keyByteToString(key) + "\n\n").getBytes("UTF-8"));
+
+        int count;
+        byte[] buffer = new byte[4096];
+        while((count = inputStream.read(buffer)) > 0){
+            outputStream.write(buffer, 0, count);
+        }
+        inputStream.close();
+        outputStream.close();
+        socket.close();
+
+        return keyByteToString(key);
+    }
+
+    public static void delete(String node_ap, String key) throws IOException {
+        Pair<InetAddress, Integer> parsedNodeAp = parseNodeAp(node_ap);
+        InetAddress address = parsedNodeAp.first;
+        int port = parsedNodeAp.second;
+   
+        Socket socket = new Socket(address, port);
+
+        // Send GET request to server
+        DataOutputStream socketOutputStream = new DataOutputStream(socket.getOutputStream());
+        socketOutputStream.write(("DELETE " + key).getBytes("UTF-8"));
+        socketOutputStream.close();
+        socket.close();
     }
 
     public static void join(String host){
@@ -47,4 +150,31 @@ public class TestClient {
             e.printStackTrace();
         }
     }
+    
+    private static Pair<InetAddress, Integer> parseNodeAp(String node_ap) throws IOException {
+        // Host: ip_addr:port
+        String[] splitHost = node_ap.split(":");
+        String addressString = splitHost[0];
+        int port = Integer.parseInt(splitHost[1]);
+        InetAddress address = InetAddress.getByName(addressString);
+        return new Pair<>(address, port);
+    }
+
+    private static String keyByteToString(byte[] key) {
+        StringBuilder result = new StringBuilder();
+        for (byte b : key) {
+            result.append(String.format("%02X", b));
+        }
+        return result.toString();
+    }
+
+    // TODO: Remove?
+    /* private static byte[] keyStringToByte(String key){
+        byte[] result = new byte[32];
+        for (int i = 0; i < key.length(); i += 2) {
+            result[i/2] = (byte) ((Character.digit(key.charAt(i), 16) << 4)
+                                + Character.digit(key.charAt(i+1), 16));
+        }
+        return result;
+    } */
 }

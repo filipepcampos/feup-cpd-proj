@@ -23,8 +23,8 @@ public class MulticastListener implements Runnable {
     final private MembershipLog log;
     final private ExecutorService executor;
 
-    public MulticastListener(NodeInfo nodeInfo, InetAddress multicastAddress, int multicastPort
-        , Connection connection, MembershipLog log, Set<NodeInfo> nodeSet, ExecutorService executor){
+    public MulticastListener(NodeInfo nodeInfo, InetAddress multicastAddress, int multicastPort,
+                             Connection connection, MembershipLog log, Set<NodeInfo> nodeSet, ExecutorService executor){
         this.multicastAddress = multicastAddress;
         this.multicastPort = multicastPort;
         this.nodeInfo = nodeInfo;

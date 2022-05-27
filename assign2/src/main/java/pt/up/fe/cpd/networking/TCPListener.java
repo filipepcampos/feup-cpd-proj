@@ -11,7 +11,11 @@ public class TCPListener {
 
     public TCPListener(InetAddress address, int port) throws IOException {
         this.serverSocket = new ServerSocket(port, 0, address);
-        this.serverSocket.setSoTimeout(3000);
+    }
+
+    public TCPListener(InetAddress address, int port, int timeout) throws IOException {
+        this.serverSocket = new ServerSocket(port, 0, address);
+        this.serverSocket.setSoTimeout(timeout);
     }
 
     public void close() {
@@ -22,8 +26,12 @@ public class TCPListener {
         }
     }
 
+    public Socket accept() throws IOException {
+        return this.serverSocket.accept();
+    }
+
     public String receive() throws IOException {
-        Socket socket = this.serverSocket.accept();
+        Socket socket = this.accept();
         BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String input = inputStream.lines().collect(Collectors.joining("\n"));
         socket.close();
