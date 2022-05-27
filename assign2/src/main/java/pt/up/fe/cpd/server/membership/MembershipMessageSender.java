@@ -4,13 +4,12 @@ import pt.up.fe.cpd.networking.MulticastMessageSender;
 import java.io.IOException;
 import java.net.*;
 
-public class MembershipMessageSender {
-    MulticastMessageSender messageSender;
+public class MembershipMessageSender extends MulticastMessageSender {
     MembershipEvent event;
     int membershipCounter;
 
     public MembershipMessageSender(MembershipEvent event, int membershipCounter, InetAddress address, int port){
-        this.messageSender = new MulticastMessageSender(address, port);
+        super(address, port);
         this.event = event;
         this.membershipCounter = membershipCounter;
     }
@@ -33,6 +32,6 @@ public class MembershipMessageSender {
         }
 
         byte[] data = message.toString().getBytes();
-        messageSender.send(data);
+        super.send(data);
     }
 }
