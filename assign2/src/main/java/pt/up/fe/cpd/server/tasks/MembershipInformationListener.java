@@ -7,16 +7,14 @@ import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.SocketTimeoutException;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
 public class MembershipInformationListener implements Callable<Boolean> {
-    InetAddress address;
-    int port;
-    Set<NodeInfo> nodeList;
-    MembershipLog log;
+    final private InetAddress address;
+    final private int port;
+    final private Set<NodeInfo> nodeList;
+    final private MembershipLog log;
 
     public MembershipInformationListener(InetAddress address, int port, Set<NodeInfo> nodeList, MembershipLog log){
         this.address = address;

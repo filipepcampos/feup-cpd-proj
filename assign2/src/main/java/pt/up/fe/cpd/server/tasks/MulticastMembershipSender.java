@@ -17,8 +17,8 @@ public class MulticastMembershipSender implements Runnable {
     final private Connection connection;
     final private int multicastPort;
     final private int membershipCounter;
-    final Set<NodeInfo> nodeSet;
-    final MembershipLog log;
+    final private Set<NodeInfo> nodeSet;
+    final private MembershipLog log;
 
     public MulticastMembershipSender(InetAddress multicastAddress, int multicastPort, int membershipCounter,
                                      Connection connection, Set<NodeInfo> nodeSet, MembershipLog log){

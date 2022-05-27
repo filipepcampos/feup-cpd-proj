@@ -14,7 +14,6 @@ import pt.up.fe.cpd.server.membership.log.MembershipLog;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 import pt.up.fe.cpd.server.tasks.MembershipInformationListener;
 import pt.up.fe.cpd.server.tasks.MulticastListener;
-import pt.up.fe.cpd.server.tasks.MulticastMembershipSender;
 
 public class Node extends NodeInfo implements MembershipService {
     final private HashSet<NodeInfo> nodeSet;
