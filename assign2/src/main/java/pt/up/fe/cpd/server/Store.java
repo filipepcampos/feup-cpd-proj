@@ -1,6 +1,8 @@
 package pt.up.fe.cpd.server;
 
 import pt.up.fe.cpd.server.membership.MembershipService;
+import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
+import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.store.KeyValueStore;
 import pt.up.fe.cpd.server.store.tasks.StoreOperationListener;
 
@@ -24,11 +26,12 @@ public class Store extends Node implements KeyValueStore {
 
     @Override
     public void receive(){
-        this.getExecutor().execute(new StoreOperationListener(this, this.getListener(), this.getExecutor(), this, new NodeSearcher(getNodeSet())));
+        this.getExecutor().execute(new StoreOperationListener(this, this.getListener(), this.getExecutor(), (ClusterSearcher) getCluster(), (ClusterViewer) getCluster()));
     }
 
     @Override
     public boolean put(String key, DataInputStream data) {     // TODO: Change return to Booleean for success or failure
+        System.out.println("[debug] put");
         // Transfer file
         FileOutputStream fileOutputStream;
         try{
@@ -48,9 +51,11 @@ public class Store extends Node implements KeyValueStore {
             }
             return false;
         }
+        System.out.println("[debug] A");
         
         DataOutputStream outputStream = new DataOutputStream(fileOutputStream);
 
+        System.out.println("[debug] B");
         int count;
         byte[] buffer = new byte[4096];
 
@@ -58,11 +63,14 @@ public class Store extends Node implements KeyValueStore {
             while((count = data.read(buffer)) > 0){
                 outputStream.write(buffer, 0, count);
             }
+            System.out.println("[debug] C");
             outputStream.close();
         } catch(IOException e){
             e.printStackTrace();
+            System.out.println("[debug] E");
             return false;
         }
+        System.out.println("[debug] D");
 
         return true;
     }

@@ -2,12 +2,9 @@ package pt.up.fe.cpd.server.membership;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import pt.up.fe.cpd.networking.TCPMessenger;
-import pt.up.fe.cpd.server.NodeInfo;
-import pt.up.fe.cpd.server.membership.log.MembershipLog;
+import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 
 /*
 Sends membership information over TCP
@@ -17,14 +14,12 @@ public class MembershipInformationMessenger extends TCPMessenger {
         super(address, port);
     }
 
-    public void send(Set<NodeInfo> nodes, MembershipLog log) throws IOException {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder
-            .append("MEMBERSHIP\n\n")
-            .append(nodes.stream().map(n -> n.toString()).collect(Collectors.joining(", ")))
-            .append('\n')
-            .append(log.toString());
+    public void send(ClusterViewer clusterViewer) throws IOException {
+        String message = "MEMBERSHIP\n\n" +
+                clusterViewer.getNodeRepresentation() +
+                '\n' +
+                clusterViewer.getLogRepresentation();
 
-        super.send(stringBuilder.toString().getBytes());
+        super.send(message.getBytes());
     }
 }

@@ -2,9 +2,9 @@ package pt.up.fe.cpd.server.membership.tasks;
 
 import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
-import pt.up.fe.cpd.server.membership.Connection;
+import pt.up.fe.cpd.server.membership.cluster.ClusterManager;
+import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.membership.ConnectionStatus;
-import pt.up.fe.cpd.server.membership.log.MembershipLog;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 import pt.up.fe.cpd.utils.Pair;
 
@@ -13,26 +13,23 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.UnknownHostException;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 public class MulticastListener implements Runnable {
     final private InetAddress multicastAddress;
     final private int multicastPort;
     final private ActiveNodeInfo nodeInfo;
-    final private Connection connection;
-    final private Set<NodeInfo> nodeSet;
-    final private MembershipLog log;
+    final private ClusterViewer clusterViewer;
+    final private ClusterManager clusterManager;
     final private ExecutorService executor;
 
     public MulticastListener(ActiveNodeInfo nodeInfo, InetAddress multicastAddress, int multicastPort,
-                             Connection connection, MembershipLog log, Set<NodeInfo> nodeSet, ExecutorService executor){
+                             ClusterViewer clusterViewer, ClusterManager clusterManager, ExecutorService executor){
         this.multicastAddress = multicastAddress;
         this.multicastPort = multicastPort;
         this.nodeInfo = nodeInfo;
-        this.connection = connection;
-        this.log = log;
-        this.nodeSet = nodeSet;
+        this.clusterViewer = clusterViewer;
+        this.clusterManager = clusterManager;
         this.executor = executor;
     }
 
@@ -49,7 +46,7 @@ public class MulticastListener implements Runnable {
         }
 
         byte[] buf = new byte[1024];
-        while (connection.getStatus() == ConnectionStatus.CONNECTED) {
+        while (clusterViewer.getConnectionStatus() == ConnectionStatus.CONNECTED) {
             DatagramPacket packet = new DatagramPacket(buf, 1024); // TODO: Try out of loop
             try {
                 socket.receive(packet);
@@ -115,9 +112,8 @@ public class MulticastListener implements Runnable {
         }
 
         System.out.println("[debug] executing membershipInfoSender");
-        executor.execute(new MembershipInformationSender(parsedNodeInfo, nodeSet, log));
-        nodeSet.add(parsedNodeInfo);
-        log.addEntry(new MembershipLogEntry(parsedNodeInfo.getAddress(), parsedNodeInfo.getPort(), receivedCounter));
+        executor.execute(new MembershipInformationSender(parsedNodeInfo, clusterViewer));
+        clusterManager.registerJoinNode(parsedNodeInfo, receivedCounter);
         System.out.println("[debug] executing membershipInfoSender");
     }
 
@@ -138,8 +134,7 @@ public class MulticastListener implements Runnable {
             return;
         }
 
-        nodeSet.remove(parsedNodeInfo);
-        log.addEntry(new MembershipLogEntry(parsedNodeInfo.getAddress(), parsedNodeInfo.getPort(), receivedCounter));
+        clusterManager.registerLeaveNode(parsedNodeInfo, receivedCounter);
     }
 
     private void handleMembership(String receivedData){
@@ -151,7 +146,7 @@ public class MulticastListener implements Runnable {
             String receivedAddress          = splitNodeId[0];
             int receivedPort                = Integer.parseInt(splitNodeId[1]);
             int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
-            log.addEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
+            clusterManager.addLogEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
         }
     }
 }

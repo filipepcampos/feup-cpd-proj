@@ -1,15 +1,18 @@
-package pt.up.fe.cpd.server;
+package pt.up.fe.cpd.server.membership.cluster;
 
-import java.util.TreeSet;
+import pt.up.fe.cpd.server.ActiveNodeInfo;
+import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.utils.Pair;
 
-public class NodeSearcher {
-    final private TreeSet<NodeInfo> nodeSet;
+public class SearchableCluster extends Cluster implements ClusterSearcher{
+    private final ActiveNodeInfo activeNode;
 
-    public NodeSearcher(TreeSet<NodeInfo> nodeSet){
-        this.nodeSet = nodeSet;
+    public SearchableCluster(ActiveNodeInfo activeNode) {
+        super();
+        this.activeNode = activeNode;
     }
 
+    @Override
     public NodeInfo findNodeByKey(byte[] key){ // TODO: This name is horrible
         NodeInfo item =  nodeSet.higher(new NodeInfo(key));
         if(item == null){ // Circular node representation
@@ -18,6 +21,7 @@ public class NodeSearcher {
         return item;
     }
 
+    @Override
     public Pair<NodeInfo, NodeInfo> findTwoClosestNodes(NodeInfo nodeInfo){
         NodeInfo lower = nodeSet.lower(nodeInfo);
         NodeInfo higher = nodeSet.higher(nodeInfo);
@@ -28,5 +32,10 @@ public class NodeSearcher {
             higher = nodeSet.first();
         }
         return new Pair<>(lower, higher);
+    }
+
+    @Override
+    public boolean isActiveNode(NodeInfo nodeInfo) {
+        return nodeInfo.equals((NodeInfo) activeNode);
     }
 }

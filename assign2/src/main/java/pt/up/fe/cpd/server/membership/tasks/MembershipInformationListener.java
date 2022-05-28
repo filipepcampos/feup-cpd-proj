@@ -3,22 +3,19 @@ package pt.up.fe.cpd.server.membership.tasks;
 import pt.up.fe.cpd.networking.TCPListener;
 import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
-import pt.up.fe.cpd.server.membership.log.MembershipLog;
+import pt.up.fe.cpd.server.membership.cluster.ClusterManager;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.concurrent.Callable;
 
 public class MembershipInformationListener implements Callable<Boolean> {
     final private ActiveNodeInfo nodeInfo;
-    final private Set<NodeInfo> nodeList;
-    final private MembershipLog log;
+    final private ClusterManager clusterManager;
 
-    public MembershipInformationListener(ActiveNodeInfo nodeInfo, Set<NodeInfo> nodeList, MembershipLog log){
+    public MembershipInformationListener(ActiveNodeInfo nodeInfo, ClusterManager clusterManager){
         this.nodeInfo = nodeInfo;
-        this.nodeList = nodeList;
-        this.log = log;
+        this.clusterManager = clusterManager;
     }
 
     @Override
@@ -45,7 +42,7 @@ public class MembershipInformationListener implements Callable<Boolean> {
                     String[] splitNodeInfo  = nodeInfo.split(":");
                     String receivedAddress  = splitNodeInfo[0];
                     int receivedPort        = Integer.parseInt(splitNodeInfo[1]);
-                    nodeList.add(new NodeInfo(receivedAddress, receivedPort));
+                    clusterManager.addNode(new NodeInfo(receivedAddress, receivedPort));
                 }
 
                 String[] logInfo = splitMessage[3].split(", ");
@@ -55,7 +52,7 @@ public class MembershipInformationListener implements Callable<Boolean> {
                     String receivedAddress          = splitNodeId[0];
                     int receivedPort                = Integer.parseInt(splitNodeId[1]);
                     int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
-                    log.addEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
+                    clusterManager.addLogEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
                 }
             } catch(IOException e) {
                 listener.close();
