@@ -24,7 +24,7 @@ public class Store extends Node implements KeyValueStore {
 
     @Override
     public void receive(){
-        this.getExecutor().execute(new StoreOperationListener(this, this.getListener(), this.getExecutor()));
+        this.getExecutor().execute(new StoreOperationListener(this, this.getListener(), this.getExecutor(), this, new NodeSearcher(getNodeSet())));
     }
 
     @Override

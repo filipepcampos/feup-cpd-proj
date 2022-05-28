@@ -166,14 +166,4 @@ public class TestClient {
         }
         return result.toString();
     }
-
-    // TODO: Remove?
-    /* private static byte[] keyStringToByte(String key){
-        byte[] result = new byte[32];
-        for (int i = 0; i < key.length(); i += 2) {
-            result[i/2] = (byte) ((Character.digit(key.charAt(i), 16) << 4)
-                                + Character.digit(key.charAt(i+1), 16));
-        }
-        return result;
-    } */
 }

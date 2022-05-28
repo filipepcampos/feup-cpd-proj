@@ -52,6 +52,10 @@ public abstract class Node extends NodeInfo implements MembershipService {
         return this.listener;
     }
 
+    public TreeSet<NodeInfo> getNodeSet() {
+        return nodeSet;
+    }
+
     public void open(){
         try {
             this.listener = new TCPListener(this.address, this.getStoragePort());
