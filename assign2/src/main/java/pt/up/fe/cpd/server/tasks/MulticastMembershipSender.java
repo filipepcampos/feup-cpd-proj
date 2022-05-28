@@ -4,7 +4,7 @@ import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.Connection;
 import pt.up.fe.cpd.server.membership.ConnectionStatus;
 import pt.up.fe.cpd.server.membership.MembershipEvent;
-import pt.up.fe.cpd.server.membership.MembershipMessageSender;
+import pt.up.fe.cpd.server.membership.MembershipMessenger;
 import pt.up.fe.cpd.server.membership.log.MembershipLog;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class MulticastMembershipSender implements Runnable {
                 return;
             }
 
-            MembershipMessageSender message = new MembershipMessageSender(MembershipEvent.MEMBERSHIP, membershipCounter, multicastAddress, multicastPort);
+            MembershipMessenger message = new MembershipMessenger(MembershipEvent.MEMBERSHIP, membershipCounter, multicastAddress, multicastPort);
             try {
                 message.send("", log.toString());
             }

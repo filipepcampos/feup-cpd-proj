@@ -1,14 +1,14 @@
 package pt.up.fe.cpd.server.membership;
 
-import pt.up.fe.cpd.networking.MulticastMessageSender;
+import pt.up.fe.cpd.networking.MulticastMessenger;
 import java.io.IOException;
 import java.net.*;
 
-public class MembershipMessageSender extends MulticastMessageSender {
+public class MembershipMessenger extends MulticastMessenger {
     MembershipEvent event;
     int membershipCounter;
 
-    public MembershipMessageSender(MembershipEvent event, int membershipCounter, InetAddress address, int port){
+    public MembershipMessenger(MembershipEvent event, int membershipCounter, InetAddress address, int port){
         super(address, port);
         this.event = event;
         this.membershipCounter = membershipCounter;

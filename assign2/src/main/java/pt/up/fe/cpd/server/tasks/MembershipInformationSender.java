@@ -1,7 +1,7 @@
 package pt.up.fe.cpd.server.tasks;
 
 import pt.up.fe.cpd.server.NodeInfo;
-import pt.up.fe.cpd.server.membership.MembershipInformationMessageSender;
+import pt.up.fe.cpd.server.membership.MembershipInformationMessenger;
 import pt.up.fe.cpd.server.membership.log.MembershipLog;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class MembershipInformationSender implements Runnable {
             return;
         }
         System.out.println("[debug] Sending TCP membership info (waited " + randomNum + " ms)");
-        MembershipInformationMessageSender sender = new MembershipInformationMessageSender(this.address, this.port);
+        MembershipInformationMessenger sender = new MembershipInformationMessenger(this.address, this.port);
         try {
             sender.send(nodeSet, log);
         } catch (IOException e) {

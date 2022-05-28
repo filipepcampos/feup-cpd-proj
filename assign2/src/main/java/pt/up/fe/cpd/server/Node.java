@@ -77,7 +77,7 @@ public abstract class Node extends NodeInfo implements MembershipService {
         }
         
         printDebugInfo("Joining the cluster");
-        MembershipMessageSender message = new MembershipMessageSender(MembershipEvent.JOIN, this.membershipCounter, this.multicastAddress, this.multicastPort);
+        MembershipMessenger message = new MembershipMessenger(MembershipEvent.JOIN, this.membershipCounter, this.multicastAddress, this.multicastPort);
         try {
             for (int i = 0; i < 3; ++i) {
                 MembershipInformationListener listener = new MembershipInformationListener(address, getStoragePort(), nodeSet, log);
@@ -125,7 +125,7 @@ public abstract class Node extends NodeInfo implements MembershipService {
             this.connection.setStatus(ConnectionStatus.DISCONNECTING);
         }
         
-        MembershipMessageSender message = new MembershipMessageSender(MembershipEvent.LEAVE, this.membershipCounter, this.multicastAddress, this.multicastPort);
+        MembershipMessenger message = new MembershipMessenger(MembershipEvent.LEAVE, this.membershipCounter, this.multicastAddress, this.multicastPort);
         try {
             message.send(this.getAddress(), this.getStoragePort());
         }

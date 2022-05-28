@@ -5,16 +5,13 @@ import java.io.OutputStream;
 import java.io.DataOutputStream;
 import java.net.*;
 
-public class TCPMessageSender {
-    protected InetAddress address;
-    protected int port;
-
-    public TCPMessageSender(InetAddress address, int port){
-        this.address = address;
-        this.port = port;
+public class TCPMessenger extends NetworkMessenger {
+    public TCPMessenger(InetAddress address, int port) {
+        super(address, port);
     }
 
-    protected void send(byte[] data) throws IOException {
+    @Override
+    public void send(byte[] data) throws IOException {
         Socket socket = new Socket(address, port);
         OutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
