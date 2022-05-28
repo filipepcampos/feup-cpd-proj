@@ -1,6 +1,5 @@
 package pt.up.fe.cpd.server;
 
-import pt.up.fe.cpd.networking.TCPListener;
 import pt.up.fe.cpd.server.membership.MembershipService;
 import pt.up.fe.cpd.server.store.KeyValueStore;
 import pt.up.fe.cpd.server.tasks.StoreOperationListener;
@@ -12,37 +11,20 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.util.concurrent.ExecutorService;
+import java.net.UnknownHostException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-public class Store implements KeyValueStore {
-    String address;
-    int storagePort;
-    TCPListener listener;
+public class Store extends Node implements KeyValueStore {
 
-    public Store(String address, int storagePort) {
-        this.address = address;
-        this.storagePort = storagePort;
+    public Store(String multicastAddress, int multicastPort, String address, int storagePort) throws UnknownHostException {
+        super(multicastAddress, multicastPort, address, storagePort);
     }
 
-    public void open(){
-        try {
-            InetAddress address = InetAddress.getByName(this.address);
-            this.listener = new TCPListener(address, storagePort);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void receive(ExecutorService executor){
-        executor.execute(new StoreOperationListener(this, this.listener, executor));
-    }
-
-    public void close(){
-        this.listener.close();
+    @Override
+    public void receive(){
+        this.getExecutor().execute(new StoreOperationListener(this, this.getListener(), this.getExecutor()));
     }
 
     @Override
@@ -50,7 +32,7 @@ public class Store implements KeyValueStore {
         // Transfer file
         FileOutputStream fileOutputStream;
         try{
-            String directoryName = address + "_" + storagePort;
+            String directoryName = this.getAddress() + "_" + this.getStoragePort();
             File directory = new File(directoryName);
             if(!directory.exists()){
                 directory.mkdir();
@@ -90,7 +72,7 @@ public class Store implements KeyValueStore {
         // Transfer file
         FileInputStream fileInputStream;
         try{
-            String directoryName = address + "_" + storagePort;
+            String directoryName = this.getAddress() + "_" + this.getStoragePort();
             fileInputStream = new FileInputStream(directoryName + "/" + key);
         } catch(FileNotFoundException e){
             System.out.println("File cannot be found.");
@@ -121,13 +103,13 @@ public class Store implements KeyValueStore {
 
     @Override
     public boolean delete(String key) {
-        String directoryName = address + "_" + storagePort;
+        String directoryName = this.getAddress() + "_" + this.getStoragePort();
         File file = new File(directoryName + "/" + key);
         return file.delete();
     }
 
     // A service node should be invoked as follows: $ java Store <IP_mcast_addr> <IP_mcast_port> <node_id> <Store_port>
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnknownHostException {
         if (args.length != 4) {
             throw new RuntimeException("Usage: Store <IP_mcast_addr> <IP_mcast_port> <node_id> <Store_port>");
         }
@@ -139,7 +121,7 @@ public class Store implements KeyValueStore {
 
         System.out.println("["+address+"] Store:: creating new Store (" + multicastIP + ", " + multicastPort + ", " + storagePort + ") ");
 
-        Node store = new Node(multicastIP, Integer.parseInt(multicastPort), address, Integer.parseInt(storagePort));
+        Store store = new Store(multicastIP, Integer.parseInt(multicastPort), address, Integer.parseInt(storagePort));
         try {
             MembershipService stub = (MembershipService) UnicastRemoteObject.exportObject(store, 0);
             // Bind the remote object's stub in the registry

@@ -2,13 +2,14 @@ package pt.up.fe.cpd.server;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.lang.InterruptedException;
 
+import pt.up.fe.cpd.networking.TCPListener;
 import pt.up.fe.cpd.server.membership.*;
 import pt.up.fe.cpd.server.membership.log.MembershipLog;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
@@ -16,36 +17,53 @@ import pt.up.fe.cpd.server.tasks.MembershipInformationListener;
 import pt.up.fe.cpd.server.tasks.MulticastListener;
 import pt.up.fe.cpd.server.tasks.MulticastMembershipSender;
 
-public class Node extends NodeInfo implements MembershipService {
-    final private HashSet<NodeInfo> nodeSet;
+public abstract class Node extends NodeInfo implements MembershipService {
+    final private TreeSet<NodeInfo> nodeSet;
     final private MembershipLog log;
-    private InetAddress multicastAddress;
+    final private InetAddress multicastAddress;
     final private int multicastPort;
-    private InetAddress address;
-    final private Store keyValueStore;
+    final private InetAddress address;
     
     private int membershipCounter;
     final private ExecutorService executor;   // ThreadPool
     final private Connection connection;
 
-    public Node(String multicastAddress, int multicastPort, String address, int storagePort) {
+    private TCPListener listener;
+
+    public Node(String multicastAddress, int multicastPort, String address, int storagePort) throws UnknownHostException {
         super(address, storagePort);
-        this.nodeSet = new HashSet<>();
+        this.nodeSet = new TreeSet<>();
         this.nodeSet.add(new NodeInfo(address, storagePort));
         this.log = new MembershipLog();
-
-        try {
-            this.multicastAddress = InetAddress.getByName(multicastAddress);
-            this.address = InetAddress.getByName(address);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
+        this.multicastAddress = InetAddress.getByName(multicastAddress);
         this.multicastPort = multicastPort;
+        this.address = InetAddress.getByName(address);
+
         this.membershipCounter = 0; // TODO: Write/Read from file
         this.executor = Executors.newFixedThreadPool(8);
         this.connection = new Connection();
-        this.keyValueStore = new Store(address, storagePort);
+    }
+
+    protected ExecutorService getExecutor() {
+        return this.executor;
+    }
+
+    protected TCPListener getListener() {
+        return this.listener;
+    }
+
+    public void open(){
+        try {
+            this.listener = new TCPListener(this.address, this.getStoragePort());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public abstract void receive();
+
+    public void close(){
+        this.listener.close();
     }
 
     public void join() {
@@ -77,8 +95,8 @@ public class Node extends NodeInfo implements MembershipService {
             e.printStackTrace();
         }
 
-        this.keyValueStore.open();
-        this.keyValueStore.receive(executor);
+        this.open();
+        this.receive();
         
         synchronized (this.connection){
             this.connection.setStatus(ConnectionStatus.CONNECTED);
@@ -112,7 +130,7 @@ public class Node extends NodeInfo implements MembershipService {
         }
         this.membershipCounter++;
 
-        this.keyValueStore.close();
+        this.close();
         synchronized (this.connection){
             this.connection.setStatus(ConnectionStatus.DISCONNECTED);
         }
