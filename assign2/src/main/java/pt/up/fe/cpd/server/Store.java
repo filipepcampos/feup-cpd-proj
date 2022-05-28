@@ -32,7 +32,7 @@ public class Store extends Node implements KeyValueStore {
         // Transfer file
         FileOutputStream fileOutputStream;
         try{
-            String directoryName = this.getAddress() + "_" + this.getStoragePort();
+            String directoryName = this.getAddress() + "_" + this.getPort();
             File directory = new File(directoryName);
             if(!directory.exists()){
                 directory.mkdir();
@@ -72,7 +72,7 @@ public class Store extends Node implements KeyValueStore {
         // Transfer file
         FileInputStream fileInputStream;
         try{
-            String directoryName = this.getAddress() + "_" + this.getStoragePort();
+            String directoryName = this.getAddress() + "_" + this.getPort();
             fileInputStream = new FileInputStream(directoryName + "/" + key);
         } catch(FileNotFoundException e){
             System.out.println("File cannot be found.");
@@ -103,7 +103,7 @@ public class Store extends Node implements KeyValueStore {
 
     @Override
     public boolean delete(String key) {
-        String directoryName = this.getAddress() + "_" + this.getStoragePort();
+        String directoryName = this.getAddress() + "_" + this.getPort();
         File file = new File(directoryName + "/" + key);
         return file.delete();
     }

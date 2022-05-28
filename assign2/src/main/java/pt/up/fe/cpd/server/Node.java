@@ -17,12 +17,11 @@ import pt.up.fe.cpd.server.tasks.MembershipInformationListener;
 import pt.up.fe.cpd.server.tasks.MulticastListener;
 import pt.up.fe.cpd.server.tasks.MulticastMembershipSender;
 
-public abstract class Node extends NodeInfo implements MembershipService {
+public abstract class Node extends ActiveNodeInfo implements MembershipService {
     final private TreeSet<NodeInfo> nodeSet;
     final private MembershipLog log;
     final private InetAddress multicastAddress;
     final private int multicastPort;
-    final private InetAddress address;
     
     private int membershipCounter;
     final private ExecutorService executor;   // ThreadPool
@@ -37,7 +36,7 @@ public abstract class Node extends NodeInfo implements MembershipService {
         this.log = new MembershipLog();
         this.multicastAddress = InetAddress.getByName(multicastAddress);
         this.multicastPort = multicastPort;
-        this.address = InetAddress.getByName(address);
+
 
         this.membershipCounter = 0; // TODO: Write/Read from file
         this.executor = Executors.newFixedThreadPool(8);
@@ -58,7 +57,7 @@ public abstract class Node extends NodeInfo implements MembershipService {
 
     public void open(){
         try {
-            this.listener = new TCPListener(this.address, this.getStoragePort());
+            this.listener = new TCPListener(this.getInetAddress(), this.getPort());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -80,9 +79,9 @@ public abstract class Node extends NodeInfo implements MembershipService {
         MembershipMessenger message = new MembershipMessenger(MembershipEvent.JOIN, this.membershipCounter, this.multicastAddress, this.multicastPort);
         try {
             for (int i = 0; i < 3; ++i) {
-                MembershipInformationListener listener = new MembershipInformationListener(address, getStoragePort(), nodeSet, log);
+                MembershipInformationListener listener = new MembershipInformationListener((ActiveNodeInfo) this, nodeSet, log);
                 Future<Boolean> futureResult = executor.submit(listener);
-                message.send(this.getAddress(), this.getStoragePort());
+                message.send(this.getAddress(), this.getPort());
                 printDebugInfo("JOIN multicast message sent (" + (i+1) + "/3)");
                 Boolean joinedSuccessfully = false;
                 try {
@@ -106,7 +105,7 @@ public abstract class Node extends NodeInfo implements MembershipService {
             this.connection.setStatus(ConnectionStatus.CONNECTED);
         }
    
-        this.log.addEntry(new MembershipLogEntry(this.getAddress(), this.getStoragePort(), this.membershipCounter));
+        this.log.addEntry(new MembershipLogEntry(this.getAddress(), this.getPort(), this.membershipCounter));
         this.membershipCounter++;
         executor.execute(new MulticastListener(this, multicastAddress, multicastPort, connection, log, nodeSet, executor));
         executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, connection, nodeSet, log));
@@ -127,7 +126,7 @@ public abstract class Node extends NodeInfo implements MembershipService {
         
         MembershipMessenger message = new MembershipMessenger(MembershipEvent.LEAVE, this.membershipCounter, this.multicastAddress, this.multicastPort);
         try {
-            message.send(this.getAddress(), this.getStoragePort());
+            message.send(this.getAddress(), this.getPort());
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -141,10 +140,10 @@ public abstract class Node extends NodeInfo implements MembershipService {
     }
 
     private void printDebugInfo(String message){
-        System.out.println("[" + getAddress() + ":" + getStoragePort()  + "] " + message);
+        System.out.println("[" + getAddress() + ":" + getPort()  + "] " + message);
     }
 
     public String toString() {
-        return getAddress() + " " + getStoragePort();
+        return getAddress() + " " + getPort();
     }
 }

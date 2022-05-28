@@ -1,29 +1,22 @@
 package pt.up.fe.cpd.server.tasks;
 
+import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.MembershipInformationMessenger;
 import pt.up.fe.cpd.server.membership.log.MembershipLog;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 public class MembershipInformationSender implements Runnable {
-    private InetAddress address;
-    final private int port;
+    final private ActiveNodeInfo nodeInfo;
     final private Set<NodeInfo> nodeSet;
     final private MembershipLog log;
 
-    public MembershipInformationSender(String address, int port, Set<NodeInfo> nodeSet, MembershipLog log){
-        try {
-            this.address = InetAddress.getByName(address);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-        this.port = port;
+    public MembershipInformationSender(ActiveNodeInfo nodeInfo, Set<NodeInfo> nodeSet, MembershipLog log){
+        this.nodeInfo = nodeInfo;
         this.nodeSet = nodeSet;
         this.log = log;
     }
@@ -39,7 +32,7 @@ public class MembershipInformationSender implements Runnable {
             return;
         }
         System.out.println("[debug] Sending TCP membership info (waited " + randomNum + " ms)");
-        MembershipInformationMessenger sender = new MembershipInformationMessenger(this.address, this.port);
+        MembershipInformationMessenger sender = new MembershipInformationMessenger(this.nodeInfo.getInetAddress(), this.nodeInfo.getPort());
         try {
             sender.send(nodeSet, log);
         } catch (IOException e) {

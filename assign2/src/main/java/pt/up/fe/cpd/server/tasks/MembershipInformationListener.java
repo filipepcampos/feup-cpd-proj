@@ -1,24 +1,22 @@
 package pt.up.fe.cpd.server.tasks;
 
 import pt.up.fe.cpd.networking.TCPListener;
+import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.log.MembershipLog;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
 public class MembershipInformationListener implements Callable<Boolean> {
-    final private InetAddress address;
-    final private int port;
+    final private ActiveNodeInfo nodeInfo;
     final private Set<NodeInfo> nodeList;
     final private MembershipLog log;
 
-    public MembershipInformationListener(InetAddress address, int port, Set<NodeInfo> nodeList, MembershipLog log){
-        this.address = address;
-        this.port = port;
+    public MembershipInformationListener(ActiveNodeInfo nodeInfo, Set<NodeInfo> nodeList, MembershipLog log){
+        this.nodeInfo = nodeInfo;
         this.nodeList = nodeList;
         this.log = log;
     }
@@ -27,7 +25,7 @@ public class MembershipInformationListener implements Callable<Boolean> {
     public Boolean call(){
         TCPListener listener;
         try {
-            listener = new TCPListener(address, port, 3000);
+            listener = new TCPListener(nodeInfo.getInetAddress(), nodeInfo.getPort(), 3000);
         } catch (IOException e) {
             return false;
         }

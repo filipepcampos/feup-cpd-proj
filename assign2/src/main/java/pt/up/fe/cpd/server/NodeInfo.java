@@ -7,12 +7,12 @@ import java.security.MessageDigest;
 
 public class NodeInfo implements Comparable<NodeInfo> {
     final private String address;
-    final private int storagePort;
+    final private int port;
     private byte[] nodeId;
     
-    public NodeInfo(String address, int storagePort) {
+    public NodeInfo(String address, int port) {
         this.address = address;
-        this.storagePort = storagePort;
+        this.port = port;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");    
             this.nodeId = digest.digest(address.getBytes(StandardCharsets.UTF_8));
@@ -24,15 +24,15 @@ public class NodeInfo implements Comparable<NodeInfo> {
     public NodeInfo(byte[] key){
         this.nodeId = key;
         this.address = "";
-        this.storagePort = 0;
+        this.port = 0;
     }
 
     public String getAddress() {
         return address;
     }
 
-    public int getStoragePort() {
-        return storagePort;
+    public int getPort() {
+        return port;
     }
 
     public byte[] getNodeId() {
@@ -40,7 +40,7 @@ public class NodeInfo implements Comparable<NodeInfo> {
     }
 
     public String toString() {
-        return this.address + ":" + this.storagePort;
+        return this.address + ":" + this.port;
     }
 
     @Override
@@ -48,12 +48,12 @@ public class NodeInfo implements Comparable<NodeInfo> {
         if (this == obj) return true;
         if (!(obj instanceof NodeInfo)) return false;
         NodeInfo entry = (NodeInfo) obj;
-        return this.address.equals(entry.getAddress()) && this.storagePort == entry.getStoragePort();
+        return this.address.equals(entry.getAddress()) && this.port == entry.getPort();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.address, this.storagePort);
+        return Objects.hash(this.address, this.port);
     }
 
     @Override
