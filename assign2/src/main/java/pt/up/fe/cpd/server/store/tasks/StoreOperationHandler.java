@@ -1,4 +1,4 @@
-package pt.up.fe.cpd.server.tasks;
+package pt.up.fe.cpd.server.store.tasks;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

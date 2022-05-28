@@ -1,4 +1,4 @@
-package pt.up.fe.cpd.server.tasks;
+package pt.up.fe.cpd.server.membership.tasks;
 
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.Connection;

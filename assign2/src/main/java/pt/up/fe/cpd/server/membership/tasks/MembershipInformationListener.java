@@ -1,4 +1,4 @@
-package pt.up.fe.cpd.server.tasks;
+package pt.up.fe.cpd.server.membership.tasks;
 
 import pt.up.fe.cpd.networking.TCPListener;
 import pt.up.fe.cpd.server.ActiveNodeInfo;

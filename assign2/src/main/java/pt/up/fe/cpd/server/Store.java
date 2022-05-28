@@ -2,7 +2,7 @@ package pt.up.fe.cpd.server;
 
 import pt.up.fe.cpd.server.membership.MembershipService;
 import pt.up.fe.cpd.server.store.KeyValueStore;
-import pt.up.fe.cpd.server.tasks.StoreOperationListener;
+import pt.up.fe.cpd.server.store.tasks.StoreOperationListener;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

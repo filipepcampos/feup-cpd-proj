@@ -13,9 +13,9 @@ import pt.up.fe.cpd.networking.TCPListener;
 import pt.up.fe.cpd.server.membership.*;
 import pt.up.fe.cpd.server.membership.log.MembershipLog;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
-import pt.up.fe.cpd.server.tasks.MembershipInformationListener;
-import pt.up.fe.cpd.server.tasks.MulticastListener;
-import pt.up.fe.cpd.server.tasks.MulticastMembershipSender;
+import pt.up.fe.cpd.server.membership.tasks.MembershipInformationListener;
+import pt.up.fe.cpd.server.membership.tasks.MulticastListener;
+import pt.up.fe.cpd.server.membership.tasks.MulticastMembershipSender;
 
 public abstract class Node extends ActiveNodeInfo implements MembershipService {
     final private TreeSet<NodeInfo> nodeSet;
