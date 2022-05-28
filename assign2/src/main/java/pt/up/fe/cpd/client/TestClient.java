@@ -42,32 +42,31 @@ public class TestClient {
         int port = parsedNodeAp.second;
    
         Socket socket = new Socket(address, port);
+        DataInputStream socketInputStream = new DataInputStream(socket.getInputStream());
+        DataOutputStream socketOutputStream = new DataOutputStream(socket.getOutputStream());
 
         // Send GET request to server
-        DataOutputStream socketOutputStream = new DataOutputStream(socket.getOutputStream());
-        socketOutputStream.write(("GET " + key).getBytes("UTF-8"));
-        socketOutputStream.close();
+        socketOutputStream.write(("GET " + key + "\n").getBytes("UTF-8"));
 
         // Transfer file
-        FileOutputStream fileOutputStream;
+        DataOutputStream fileOutputStream;
         try{
-            fileOutputStream = new FileOutputStream(key); // TODO: What name should the file have
+            fileOutputStream = new DataOutputStream(new FileOutputStream(key)); // TODO: What name should the file have
         } catch(FileNotFoundException e){
             System.out.println("File cannot be found.");
             socket.close();
             return;
         }
-        
-        DataInputStream inputStream = new DataInputStream(socket.getInputStream());
-        DataOutputStream outputStream = new DataOutputStream(fileOutputStream);
 
         int count;
         byte[] buffer = new byte[4096];
-        while((count = inputStream.read(buffer)) > 0){
-            outputStream.write(buffer, 0, count);
+        while((count = socketInputStream.read(buffer)) > 0){
+            fileOutputStream.write(buffer, 0, count);
         }
-        inputStream.close();
-        outputStream.close();
+
+        fileOutputStream.close();
+        socketInputStream.close();
+        socketOutputStream.close();
         socket.close();
     }
 
@@ -122,7 +121,7 @@ public class TestClient {
 
         // Send GET request to server
         DataOutputStream socketOutputStream = new DataOutputStream(socket.getOutputStream());
-        socketOutputStream.write(("DELETE " + key).getBytes("UTF-8"));
+        socketOutputStream.write(("DELETE " + key + "\n").getBytes("UTF-8"));
         socketOutputStream.close();
         socket.close();
     }

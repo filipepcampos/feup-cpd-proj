@@ -8,21 +8,22 @@ public interface KeyValueStore {
      * Adds a key-value pair to the store
      * @param key key that will be used to generate the encoded key
      * @param data value that will be stored associated to the key
-     * @return sha-256 encoded key
+     * @return boolean true if succeeded, false otherwise 
      */
-    public void put(String key, DataInputStream data);
+    public boolean put(String key, DataInputStream data);
 
     /**
      * Retrieves the value bounded to the key
      * @param key sha-256 encoded key
      * @param data value that will be returned associated to the key
-     * @return value associated to the given key
+     * @return boolean true if succeeded, false otherwise 
      */
-    public void get(String key, DataOutputStream dat);
+    public boolean get(String key, DataOutputStream data);
 
     /**
      * Deletes a key-value pair
      * @param key sha-256 encoded key
+     * @return boolean true if succeeded, false otherwise 
      */
-    public void delete(String key);
+    public boolean delete(String key);
 }

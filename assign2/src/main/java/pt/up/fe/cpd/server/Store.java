@@ -7,8 +7,10 @@ import pt.up.fe.cpd.server.tasks.StoreOperationListener;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.concurrent.ExecutorService;
@@ -44,11 +46,17 @@ public class Store implements KeyValueStore {
     }
 
     @Override
-    public void put(String key, DataInputStream data) {     // TODO: Change return to Booleean for success or failure
+    public boolean put(String key, DataInputStream data) {     // TODO: Change return to Booleean for success or failure
         // Transfer file
         FileOutputStream fileOutputStream;
         try{
-            fileOutputStream = new FileOutputStream(address + "_" + storagePort + "/" + key); // TODO: What name should the file have
+            String directoryName = address + "_" + storagePort;
+            File directory = new File(directoryName);
+            if(!directory.exists()){
+                directory.mkdir();
+            }
+
+            fileOutputStream = new FileOutputStream(directoryName + "/" + key); // TODO: What name should the file have
         } catch(FileNotFoundException e){   // TODO: This is quite irrelevant
             System.out.println("File cannot be found.");
             try {
@@ -56,7 +64,7 @@ public class Store implements KeyValueStore {
             } catch(IOException e1){
                 e1.printStackTrace();
             }
-            return;
+            return false;
         }
         
         DataOutputStream outputStream = new DataOutputStream(fileOutputStream);
@@ -69,20 +77,53 @@ public class Store implements KeyValueStore {
                 outputStream.write(buffer, 0, count);
             }
             outputStream.close();
-            data.close();
         } catch(IOException e){
             e.printStackTrace();
+            return false;
         }
+
+        return true;
     }
 
     @Override
-    public void get(String key, DataOutputStream data) {
-        return;
+    public boolean get(String key, DataOutputStream data) {
+        // Transfer file
+        FileInputStream fileInputStream;
+        try{
+            String directoryName = address + "_" + storagePort;
+            fileInputStream = new FileInputStream(directoryName + "/" + key);
+        } catch(FileNotFoundException e){
+            System.out.println("File cannot be found.");
+            try {
+                data.close();
+            } catch(IOException e1){
+                e1.printStackTrace();
+            }
+            return false;
+        }
+        
+        DataInputStream inputStream = new DataInputStream(fileInputStream);
+
+        int count;
+        byte[] buffer = new byte[4096];
+        try {
+            while((count = inputStream.read(buffer)) > 0){
+                data.write(buffer, 0, count);
+            }
+            inputStream.close();
+        } catch(IOException e){
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
     }
 
     @Override
-    public void delete(String key) {
-        return;
+    public boolean delete(String key) {
+        String directoryName = address + "_" + storagePort;
+        File file = new File(directoryName + "/" + key);
+        return file.delete();
     }
 
     // A service node should be invoked as follows: $ java Store <IP_mcast_addr> <IP_mcast_port> <node_id> <Store_port>
