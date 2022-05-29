@@ -30,7 +30,6 @@ public class MembershipInformationListener implements Callable<Boolean> {
         for(int i = 0; i < 3; ++i){
             try {
                 String message = listener.receive();
-                System.out.println("[debug] TCP membership message received: " + message);
 
                 String[] splitMessage = message.split("\n");
                 if(!splitMessage[0].equals("MEMBERSHIP")){

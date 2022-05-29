@@ -32,7 +32,6 @@ public class Store extends Node implements KeyValueStore {
 
     @Override
     public boolean put(String key, DataInputStream data) {     // TODO: Change return to Booleean for success or failure
-        System.out.println("[debug] put");
         // Transfer file
         FileOutputStream fileOutputStream;
         try{
@@ -52,11 +51,9 @@ public class Store extends Node implements KeyValueStore {
             }
             return false;
         }
-        System.out.println("[debug] A");
         
         DataOutputStream outputStream = new DataOutputStream(fileOutputStream);
 
-        System.out.println("[debug] B");
         boolean transferSuccessful = FileTransfer.transfer(data, outputStream);
         try{
             outputStream.close();

@@ -27,7 +27,7 @@ public class MembershipInformationSender implements Runnable {
         } catch (InterruptedException e) { // TODO: Ver melhor
             return;
         }
-        System.out.println("[debug] Sending TCP membership info (waited " + randomNum + " ms)");
+        System.out.println("["+ this.nodeInfo + "] Sending TCP membership info (waited " + randomNum + " ms)");
         MembershipInformationMessenger sender = new MembershipInformationMessenger(this.nodeInfo.getInetAddress(), this.nodeInfo.getPort());
         try {
             sender.send(clusterViewer);

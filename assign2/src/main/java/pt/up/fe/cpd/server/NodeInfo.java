@@ -39,6 +39,7 @@ public class NodeInfo implements Comparable<NodeInfo> {
         return nodeId;
     }
 
+    @Override
     public String toString() {
         return this.address + ":" + this.port;
     }

@@ -60,13 +60,13 @@ public class MulticastListener implements Runnable {
             String[] splitString = received.split(" ");
             String eventType = splitString[0];
 
-            System.out.println("[debug] Multicast message received: " + received);
-
             switch(eventType){
                 case "JOIN": // Joining
+                    System.out.println("[" + this.nodeInfo +"] Received JOIN multicast message");
                     handleJoin(received);
                     break;
                 case "LEAVE": // Leaving
+                    System.out.println("[" + this.nodeInfo +"] Received LEAVE multicast message");
                     handleLeave(received);
                     break;
                 case "MEMBERSHIP": // TODO: Deal with membership info
@@ -111,10 +111,8 @@ public class MulticastListener implements Runnable {
             return;
         }
 
-        System.out.println("[debug] executing membershipInfoSender");
         executor.execute(new MembershipInformationSender(parsedNodeInfo, clusterViewer));
         clusterManager.registerJoinNode(parsedNodeInfo, receivedCounter);
-        System.out.println("[debug] executing membershipInfoSender");
     }
 
     private void handleLeave(String receivedData){

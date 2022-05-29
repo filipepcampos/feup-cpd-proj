@@ -33,9 +33,9 @@ public class StoreOperationHandler implements Runnable {
 
             String[] splitHeader = header.split(" ");
             String operation = splitHeader[0];
+            // TODO: Ignore membership messages
             String key = splitHeader[1];
 
-            System.out.println("yooo");
             NodeInfo node = this.searcher.findNodeByKey(keyStringToByte(key));
             if(this.searcher.isActiveNode(node)){
                 System.out.println("THIS KEY BELONGS TO ME!!!");

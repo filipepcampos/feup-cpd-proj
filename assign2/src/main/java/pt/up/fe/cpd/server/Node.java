@@ -102,7 +102,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
             connection.setStatus(ConnectionStatus.CONNECTED);
         }
 
-        this.cluster.registerJoinNode((NodeInfo) this, this.membershipCounter);
+        this.cluster.registerJoinNode(this, this.membershipCounter);
         this.membershipCounter++;
         executor.execute(new MulticastListener(this, multicastAddress, multicastPort, (ClusterViewer) cluster, (ClusterManager) cluster, executor));
         executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, (ClusterViewer) cluster));
@@ -134,9 +134,5 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
 
     private void printDebugInfo(String message){
         System.out.println("[" + getAddress() + ":" + getPort()  + "] " + message);
-    }
-
-    public String toString() {
-        return getAddress() + " " + getPort();
     }
 }
