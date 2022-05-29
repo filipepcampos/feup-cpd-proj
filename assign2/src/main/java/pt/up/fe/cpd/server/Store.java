@@ -1,5 +1,6 @@
 package pt.up.fe.cpd.server;
 
+import pt.up.fe.cpd.networking.FileTransfer;
 import pt.up.fe.cpd.server.membership.MembershipService;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
@@ -56,23 +57,13 @@ public class Store extends Node implements KeyValueStore {
         DataOutputStream outputStream = new DataOutputStream(fileOutputStream);
 
         System.out.println("[debug] B");
-        int count;
-        byte[] buffer = new byte[4096];
-
-        try {
-            while((count = data.read(buffer)) > 0){
-                outputStream.write(buffer, 0, count);
-            }
-            System.out.println("[debug] C");
+        boolean transferSuccessful = FileTransfer.transfer(data, outputStream);
+        try{
             outputStream.close();
-        } catch(IOException e){
+        } catch (IOException e){
             e.printStackTrace();
-            System.out.println("[debug] E");
-            return false;
         }
-        System.out.println("[debug] D");
-
-        return true;
+        return transferSuccessful;
     }
 
     @Override
@@ -94,19 +85,13 @@ public class Store extends Node implements KeyValueStore {
         
         DataInputStream inputStream = new DataInputStream(fileInputStream);
 
-        int count;
-        byte[] buffer = new byte[4096];
-        try {
-            while((count = inputStream.read(buffer)) > 0){
-                data.write(buffer, 0, count);
-            }
+        boolean transferSuccessful = FileTransfer.transfer(inputStream, data);
+        try{
             inputStream.close();
-        } catch(IOException e){
+        } catch (IOException e){
             e.printStackTrace();
-            return false;
         }
-
-        return true;
+        return transferSuccessful;
     }
 
     @Override

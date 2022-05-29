@@ -1,5 +1,6 @@
 package pt.up.fe.cpd.client;
 
+import pt.up.fe.cpd.networking.FileTransfer;
 import pt.up.fe.cpd.server.membership.MembershipService;
 
 import java.net.Socket;
@@ -58,11 +59,7 @@ public class TestClient {
             return;
         }
 
-        int count;
-        byte[] buffer = new byte[4096];
-        while((count = socketInputStream.read(buffer)) > 0){
-            fileOutputStream.write(buffer, 0, count);
-        }
+        boolean transferSuccessful = FileTransfer.transfer(socketInputStream, fileOutputStream);
 
         fileOutputStream.close();
         socketInputStream.close();
@@ -100,11 +97,7 @@ public class TestClient {
 
         outputStream.write(("PUT " + keyByteToString(key) + "\n\n").getBytes("UTF-8"));
 
-        int count;
-        byte[] buffer = new byte[4096];
-        while((count = inputStream.read(buffer)) > 0){
-            outputStream.write(buffer, 0, count);
-        }
+        boolean transferSuccessful = FileTransfer.transfer(inputStream, outputStream);
         inputStream.close();
         outputStream.close();
         socket.close();

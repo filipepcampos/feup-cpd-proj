@@ -54,12 +54,12 @@ public class Cluster implements ClusterManager, ClusterViewer{
 
     @Override
     public String getLogRepresentation(){
-        return nodeSet.stream().map(NodeInfo::toString).collect(Collectors.joining(", "));
+        return log.toString();
     }
 
     @Override
     public String getNodeRepresentation(){
-        return log.toString();
+        return nodeSet.stream().map(NodeInfo::toString).collect(Collectors.joining(", "));
     }
 
     @Override
