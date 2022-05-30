@@ -33,25 +33,35 @@ public class ReplicateFiles implements Runnable {
         System.out.println(this.currentNode + " Opening " + directory.getName() + " and searching for matching files...");
         System.out.println(this.currentNode + " keys:" + HashUtils.keyByteToString(lowestKey) + " to " + HashUtils.keyByteToString(highestKey));
         File[] matchingFiles = directory.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                // lowestKey < fileKey <= highestKey
+            public boolean accept(File dir, String name) {               
                 byte[] fileKey = HashUtils.keyStringToByte(name);
-                int comparison = HashUtils.compare(fileKey, lowestKey);
-                if(comparison <= 0){
-                    return false;
+
+                System.out.println(currentNode + " [" + HashUtils.keyByteToString(lowestKey) + "," + HashUtils.keyByteToString(highestKey) + "] searching for " + name);
+
+                int comparison = HashUtils.compare(lowestKey, highestKey);
+                if(comparison == 0){
+                    return true;
+                } else if(comparison < 0){  //  lowestKey < highestKey
+                    // lowestKey < fileKey <= highestKey
+                    comparison = HashUtils.compare(fileKey, lowestKey);
+                    if(comparison <= 0){
+                        return false;
+                    }
+                    return HashUtils.compare(fileKey, highestKey) <= 0;
+                } else { // lowestKey > highestKey
+                    // fileKey in [0, highestKey[ U [lowestKey, +infinity[ 
+                    Boolean greaterEqThanHighestKey = HashUtils.compare(fileKey, highestKey) >= 0;
+                    Boolean lowerThanLowestKey = HashUtils.compare(fileKey, lowestKey) < 0;
+                    return !(greaterEqThanHighestKey && lowerThanLowestKey);
                 }
-                return HashUtils.compare(fileKey, highestKey) <= 0;
             }
         });
 
         if(matchingFiles != null){
-            System.out.println("not null");
             for (File file : matchingFiles) {
-                System.out.println("file");
                 this.sendReplicationOperation(file);
             }
         }
-        System.out.println("might be null");
     }
 
     private void sendReplicationOperation(File file){

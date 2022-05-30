@@ -92,15 +92,21 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
                     break;
                 }
             }
+
+            printDebugInfo("Opening TCP connection");
+            this.open();
+            synchronized (connection){
+                connection.setStatus(ConnectionStatus.CONNECTED);
+            }
+            this.receive();
+
+            printDebugInfo("Sending JOINED message");
+            message = new MembershipMessenger(MembershipEvent.JOINED, this.membershipCounter, this.multicastAddress, this.multicastPort);
+            message.send(this.getAddress(), this.getPort());
+            printDebugInfo("Sent JOINED message");
+
         } catch (IOException e) {
             e.printStackTrace();
-        }
-
-        this.open();
-        this.receive();
-        
-        synchronized (connection){
-            connection.setStatus(ConnectionStatus.CONNECTED);
         }
 
         this.cluster.registerJoinNode(this, this.membershipCounter);

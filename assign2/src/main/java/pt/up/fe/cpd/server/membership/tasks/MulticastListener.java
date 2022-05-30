@@ -7,6 +7,7 @@ import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.membership.ConnectionStatus;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
+import pt.up.fe.cpd.server.replication.RemoveFiles;
 import pt.up.fe.cpd.server.replication.ReplicateFiles;
 import pt.up.fe.cpd.utils.Pair;
 
@@ -77,6 +78,10 @@ public class MulticastListener implements Runnable {
                 case "MEMBERSHIP": // TODO: Deal with membership info
                     handleMembership(received);
                     break;
+                case "JOINED":  // Node joined cluster successfully
+                    System.out.println("[" + this.nodeInfo +"] Received JOINED multicast message");
+                    handleJoined(received);
+                    break;
             }
         }
 
@@ -109,6 +114,24 @@ public class MulticastListener implements Runnable {
         }
 
         ActiveNodeInfo parsedNodeInfo = parsedData.first;
+        if (parsedNodeInfo.getAddress().equals(this.nodeInfo.getAddress()) &&
+                parsedNodeInfo.getPort() == this.nodeInfo.getPort()) {
+            return;
+        }
+
+        executor.execute(new MembershipInformationSender(parsedNodeInfo, clusterViewer));
+    }
+
+    private void handleJoined(String receivedData){
+        Pair<ActiveNodeInfo, Integer> parsedData;
+        try {
+            parsedData = parseJoinLeaveMessage(receivedData);
+        } catch (IOException e){
+            e.printStackTrace();
+            return;
+        }
+
+        ActiveNodeInfo parsedNodeInfo = parsedData.first;
         int receivedCounter = parsedData.second;
 
         if (parsedNodeInfo.getAddress().equals(this.nodeInfo.getAddress()) &&
@@ -116,30 +139,38 @@ public class MulticastListener implements Runnable {
             return;
         }
 
-        executor.execute(new MembershipInformationSender(parsedNodeInfo, clusterViewer));
-
         Pair<NodeInfo, NodeInfo> oldNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
-        clusterManager.registerJoinNode(parsedNodeInfo, receivedCounter);
-        Pair<NodeInfo, NodeInfo> newNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
-        
-        System.out.println(nodeInfo + " handling join,");
-        if(!oldNeighbours.first.equals(newNeighbours.first)){   // New node will be inserted before
-            // This is the Node D
-            System.out.println(nodeInfo + " creating ReplicateFiles thread");
-            // B oldNeighbours.first
-            executor.execute(new ReplicateFiles(this.nodeInfo, parsedNodeInfo, oldNeighbours.first.getNodeId(), this.nodeInfo.getNodeId()));
 
-            // Remove own files [B,C[
-                // RemoveFiles(byte[] a, byte[] b)
-            // Send DELETE_RANGE [C,D[ to E
-                // SendDeleteRangeMessage?(NodeInfo target, byte[] a, byte[] b)
-        }
-        if(!oldNeighbours.second.equals(newNeighbours.second)){ // New node will be inserted after
-            System.out.println(nodeInfo + " wrong condition, better luck next time");
-            // This is the Node B
-            // Send files [B,D[
-            // Remove files [D,E[
-            // Send DELETE_RANGE [C,D[ to A
+        // Replication "transaction"
+        synchronized(clusterManager){
+            clusterManager.registerJoinNode(parsedNodeInfo, receivedCounter);
+            Pair<NodeInfo, NodeInfo> newNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
+            
+            // TODO: Make this understandable
+            System.out.println(nodeInfo + " handling join,");
+            if(!oldNeighbours.first.equals(newNeighbours.first)){   // New node will be inserted before
+                // This is the Node D
+                System.out.println(nodeInfo + " creating ReplicateFiles thread");
+
+                NodeInfo BNode = oldNeighbours.first;
+                
+                // B oldNeighbours.first
+                executor.execute(new ReplicateFiles(this.nodeInfo, parsedNodeInfo, BNode.getNodeId(), this.nodeInfo.getNodeId()));
+
+                // Remove ]A,B]
+                Pair<NodeInfo, NodeInfo> bNeighbours = clusterSearcher.findTwoClosestNodes(BNode);
+                executor.execute(new RemoveFiles(this.nodeInfo, bNeighbours.first.getNodeId(), BNode.getNodeId()));
+
+                // (On Node E) Remove ]B,C]
+                    // SendDeleteRangeMessage?(NodeInfo target, byte[] a, byte[] b)
+            }
+            if(!oldNeighbours.second.equals(newNeighbours.second)){ // New node will be inserted after
+                System.out.println(nodeInfo + " wrong condition, better luck next time");
+                // This is the Node B
+                // Send files [B,D[
+                // Remove files [D,E[
+                // Send DELETE_RANGE [C,D[ to A
+            }
         }
     }
 
