@@ -3,6 +3,7 @@ package pt.up.fe.cpd.server.membership.tasks;
 import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.cluster.ClusterManager;
+import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.membership.ConnectionStatus;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
@@ -21,15 +22,18 @@ public class MulticastListener implements Runnable {
     final private ActiveNodeInfo nodeInfo;
     final private ClusterViewer clusterViewer;
     final private ClusterManager clusterManager;
+    final private ClusterSearcher clusterSearcher;
     final private ExecutorService executor;
 
     public MulticastListener(ActiveNodeInfo nodeInfo, InetAddress multicastAddress, int multicastPort,
-                             ClusterViewer clusterViewer, ClusterManager clusterManager, ExecutorService executor){
+                             ClusterViewer clusterViewer, ClusterManager clusterManager, ClusterSearcher clusterSearcher,
+                             ExecutorService executor) {
         this.multicastAddress = multicastAddress;
         this.multicastPort = multicastPort;
         this.nodeInfo = nodeInfo;
         this.clusterViewer = clusterViewer;
         this.clusterManager = clusterManager;
+        this.clusterSearcher = clusterSearcher;
         this.executor = executor;
     }
 
@@ -112,7 +116,26 @@ public class MulticastListener implements Runnable {
         }
 
         executor.execute(new MembershipInformationSender(parsedNodeInfo, clusterViewer));
+
+        Pair<NodeInfo, NodeInfo> oldNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
         clusterManager.registerJoinNode(parsedNodeInfo, receivedCounter);
+        Pair<NodeInfo, NodeInfo> newNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
+        
+        if(!oldNeighbours.first.equals(newNeighbours.first)){   // New node will be inserted before
+            // This is the Node D
+            // Send files [D,E[
+                // ReplicateFiles(NodeInfo target, byte[] a, byte[] b)
+            // Remove own files [B,C[
+                // RemoveFiles(byte[] a, byte[] b)
+            // Send DELETE_RANGE [C,D[ to E
+                // SendDeleteRangeMessage?(NodeInfo target, byte[] a, byte[] b)
+        }
+        if(!oldNeighbours.second.equals(newNeighbours.second)){ // New node will be inserted after
+            // This is the Node B
+            // Send files [B,D[
+            // Remove files [D,E[
+            // Send DELETE_RANGE [C,D[ to A
+        }
     }
 
     private void handleLeave(String receivedData){

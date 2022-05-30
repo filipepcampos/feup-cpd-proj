@@ -4,9 +4,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
-import java.util.Arrays;
 import java.util.Scanner;
 
+import pt.up.fe.cpd.networking.FileTransfer;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.store.KeyValueStore;
@@ -28,41 +28,79 @@ public class StoreOperationHandler implements Runnable {
             System.out.println("[StoreOperationHandler] opened");
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
             
-            Scanner scanner = new Scanner(dataInputStream);            
+            Scanner scanner = new Scanner(dataInputStream);
             String header = scanner.nextLine();
 
             String[] splitHeader = header.split(" ");
             String operation = splitHeader[0];
+
+            // Mensagens novas:
+                // REPLICATE PUT key
+                // REPLICATE DELETE key
+                // REPLICATE DELETE_RANGE key1 key2
+
+            if (operation.equals("MEMBERSHIP")) {
+                scanner.close();
+                dataInputStream.close();
+                socket.close();
+                return;
+            }
             // TODO: Ignore membership messages
             String key = splitHeader[1];
 
             NodeInfo node = this.searcher.findNodeByKey(keyStringToByte(key));
             if(this.searcher.isActiveNode(node)){
                 System.out.println("THIS KEY BELONGS TO ME!!!");
+                handleRequest(operation, key, dataInputStream);
             } else {
                 System.out.println("not my responsibility... " + node.toString() + " this one's for you");
+                handleRedirect(node, operation, key, dataInputStream);
             }
 
-            switch(operation){
-                case "GET":
-                    DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                    keyValueStore.get(key, dataOutputStream);
-                    dataOutputStream.close();
-                    break;
-                case "DELETE":
-                    keyValueStore.delete(key);
-                    break;
-                case "PUT":
-                    keyValueStore.put(key, dataInputStream);
-                    break;
-            }
-            
             scanner.close();
             dataInputStream.close();
             socket.close();
         } catch(IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void handleRequest(String operation, String key, DataInputStream dataInputStream) throws IOException {
+        switch(operation) {
+            case "GET":
+                DataOutputStream dataOutputStream = new DataOutputStream(this.socket.getOutputStream());
+                keyValueStore.get(key, dataOutputStream);
+                dataOutputStream.close();
+                break;
+            case "DELETE":
+                keyValueStore.delete(key);
+                break;
+            case "PUT":
+                keyValueStore.put(key, dataInputStream);
+                break;
+        }
+    }
+
+    private void handleRedirect(NodeInfo node, String operation, String key, DataInputStream clientInputStream) throws IOException {
+        InetAddress nodeAddress = InetAddress.getByName(node.getAddress());
+        Socket nodeSocket = new Socket(nodeAddress, node.getPort());
+        DataOutputStream nodeOutputStream = new DataOutputStream(nodeSocket.getOutputStream());
+
+        nodeOutputStream.write((operation + " " + key + "\n").getBytes("UTF-8"));
+        switch(operation) {
+            case "GET":
+                DataOutputStream clientOutputStream = new DataOutputStream(socket.getOutputStream());
+                DataInputStream nodeInputStream = new DataInputStream(nodeSocket.getInputStream());
+                FileTransfer.transfer(nodeInputStream, clientOutputStream);
+                nodeInputStream.close();
+                clientOutputStream.close();
+                break;
+            case "PUT":
+                nodeOutputStream.write(("\n").getBytes("UTF-8"));
+                FileTransfer.transfer(clientInputStream, nodeOutputStream);
+                break;
+        }
+        nodeSocket.close();
     }
 
     private static byte[] keyStringToByte(String key){
