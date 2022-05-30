@@ -15,6 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.MessageDigest;
+
+import pt.up.fe.cpd.utils.HashUtils;
 import pt.up.fe.cpd.utils.Pair;
 
 // The test client should be invoked as follows: $ java TestClient <node_ap> <operation> [<opnd>]
@@ -95,14 +97,14 @@ public class TestClient {
         DataInputStream inputStream = new DataInputStream(fileInputStream);
         DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
-        outputStream.write(("PUT " + keyByteToString(key) + "\n\n").getBytes("UTF-8"));
+        outputStream.write(("PUT " + HashUtils.keyByteToString(key) + "\n\n").getBytes("UTF-8"));
 
         boolean transferSuccessful = FileTransfer.transfer(inputStream, outputStream);
         inputStream.close();
         outputStream.close();
         socket.close();
 
-        return keyByteToString(key);
+        return HashUtils.keyByteToString(key);
     }
 
     public static void delete(String node_ap, String key) throws IOException {
@@ -150,13 +152,5 @@ public class TestClient {
         int port = Integer.parseInt(splitHost[1]);
         InetAddress address = InetAddress.getByName(addressString);
         return new Pair<>(address, port);
-    }
-
-    private static String keyByteToString(byte[] key) {
-        StringBuilder result = new StringBuilder();
-        for (byte b : key) {
-            result.append(String.format("%02X", b));
-        }
-        return result.toString();
     }
 }

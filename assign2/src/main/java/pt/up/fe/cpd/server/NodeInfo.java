@@ -3,6 +3,9 @@ package pt.up.fe.cpd.server;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
+
+import pt.up.fe.cpd.utils.HashUtils;
+
 import java.security.MessageDigest;
 
 public class NodeInfo implements Comparable<NodeInfo> {
@@ -15,7 +18,7 @@ public class NodeInfo implements Comparable<NodeInfo> {
         this.port = port;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");    
-            this.nodeId = digest.digest(address.getBytes(StandardCharsets.UTF_8));
+            this.nodeId = digest.digest((address + port).getBytes(StandardCharsets.UTF_8));
         } catch(NoSuchAlgorithmException e){    // This should never happen
             e.printStackTrace();
         }
@@ -59,14 +62,6 @@ public class NodeInfo implements Comparable<NodeInfo> {
 
     @Override
     public int compareTo(NodeInfo other){
-        byte[] otherNodeId = other.getNodeId();
-        for (int i = 0; i < this.nodeId.length; ++i) {
-            if (this.nodeId[i] < otherNodeId[i]){
-                return -1;  // This object is less than the specified object
-            } else if (this.nodeId[i] > otherNodeId[i]){
-                return 1;  // This object is greater than the specified object
-            }
-        }
-        return 0;  // They're equal
+        return HashUtils.compare(this.nodeId, other.getNodeId());
     }
 }

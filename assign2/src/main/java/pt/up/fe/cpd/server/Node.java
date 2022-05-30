@@ -13,6 +13,7 @@ import pt.up.fe.cpd.server.membership.*;
 import pt.up.fe.cpd.server.membership.cluster.Cluster;
 import pt.up.fe.cpd.server.membership.cluster.ClusterManager;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
+import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.membership.cluster.SearchableCluster;
 import pt.up.fe.cpd.server.membership.tasks.MembershipInformationListener;
 import pt.up.fe.cpd.server.membership.tasks.MulticastListener;
@@ -104,7 +105,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
 
         this.cluster.registerJoinNode(this, this.membershipCounter);
         this.membershipCounter++;
-        executor.execute(new MulticastListener(this, multicastAddress, multicastPort, (ClusterViewer) cluster, (ClusterManager) cluster, executor));
+        executor.execute(new MulticastListener(this, multicastAddress, multicastPort, (ClusterViewer) cluster, (ClusterManager) cluster, (ClusterSearcher) cluster, executor));
         executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, (ClusterViewer) cluster));
     }
 

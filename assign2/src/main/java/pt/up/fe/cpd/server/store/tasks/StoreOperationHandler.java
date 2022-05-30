@@ -10,6 +10,7 @@ import pt.up.fe.cpd.networking.FileTransfer;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.store.KeyValueStore;
+import pt.up.fe.cpd.utils.HashUtils;
 
 public class StoreOperationHandler implements Runnable {
     final private KeyValueStore keyValueStore;
@@ -25,7 +26,6 @@ public class StoreOperationHandler implements Runnable {
     @Override
     public void run() {        
         try {
-            System.out.println("[StoreOperationHandler] opened");
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
             
             Scanner scanner = new Scanner(dataInputStream);
@@ -45,16 +45,23 @@ public class StoreOperationHandler implements Runnable {
                 socket.close();
                 return;
             }
-            // TODO: Ignore membership messages
-            String key = splitHeader[1];
 
-            NodeInfo node = this.searcher.findNodeByKey(keyStringToByte(key));
-            if(this.searcher.isActiveNode(node)){
-                System.out.println("THIS KEY BELONGS TO ME!!!");
+            System.out.println("[StoreOperationHandler] opened");
+            
+            if (operation.equals("REPLICATE")) {
+                operation = splitHeader[1];
+                String key = splitHeader[2];
                 handleRequest(operation, key, dataInputStream);
             } else {
-                System.out.println("not my responsibility... " + node.toString() + " this one's for you");
-                handleRedirect(node, operation, key, dataInputStream);
+                String key = splitHeader[1];
+                NodeInfo node = this.searcher.findNodeByKey(HashUtils.keyStringToByte(key));
+                if(this.searcher.isActiveNode(node)){
+                    System.out.println("THIS KEY BELONGS TO ME!!!");
+                    handleRequest(operation, key, dataInputStream);
+                } else {
+                    System.out.println("not my responsibility... " + node.toString() + " this one's for you");
+                    handleRedirect(node, operation, key, dataInputStream);
+                }
             }
 
             scanner.close();
@@ -101,14 +108,5 @@ public class StoreOperationHandler implements Runnable {
                 break;
         }
         nodeSocket.close();
-    }
-
-    private static byte[] keyStringToByte(String key){
-        byte[] result = new byte[32];
-        for (int i = 0; i < key.length(); i += 2) {
-            result[i/2] = (byte) ((Character.digit(key.charAt(i), 16) << 4)
-                                + Character.digit(key.charAt(i+1), 16));
-        }
-        return result;
     }
 }

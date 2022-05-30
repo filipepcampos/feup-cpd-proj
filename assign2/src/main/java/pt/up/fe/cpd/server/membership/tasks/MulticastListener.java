@@ -7,6 +7,7 @@ import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.membership.ConnectionStatus;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
+import pt.up.fe.cpd.server.replication.ReplicateFiles;
 import pt.up.fe.cpd.utils.Pair;
 
 import java.io.IOException;
@@ -121,16 +122,20 @@ public class MulticastListener implements Runnable {
         clusterManager.registerJoinNode(parsedNodeInfo, receivedCounter);
         Pair<NodeInfo, NodeInfo> newNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
         
+        System.out.println(nodeInfo + " handling join,");
         if(!oldNeighbours.first.equals(newNeighbours.first)){   // New node will be inserted before
             // This is the Node D
-            // Send files [D,E[
-                // ReplicateFiles(NodeInfo target, byte[] a, byte[] b)
+            System.out.println(nodeInfo + " creating ReplicateFiles thread");
+            // B oldNeighbours.first
+            executor.execute(new ReplicateFiles(this.nodeInfo, parsedNodeInfo, oldNeighbours.first.getNodeId(), this.nodeInfo.getNodeId()));
+
             // Remove own files [B,C[
                 // RemoveFiles(byte[] a, byte[] b)
             // Send DELETE_RANGE [C,D[ to E
                 // SendDeleteRangeMessage?(NodeInfo target, byte[] a, byte[] b)
         }
         if(!oldNeighbours.second.equals(newNeighbours.second)){ // New node will be inserted after
+            System.out.println(nodeInfo + " wrong condition, better luck next time");
             // This is the Node B
             // Send files [B,D[
             // Remove files [D,E[
