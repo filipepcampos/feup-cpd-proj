@@ -12,6 +12,8 @@ start java -cp .\build\classes\java\main -Djava.rmi.server.codebase=file:.\build
 pause
 java -classpath .\build\classes\java\main pt.up.fe.cpd.client.TestClient 127.0.0.1 join
 pause
-java -classpath .\build\classes\java\main pt.up.fe.cpd.client.TestClient 127.0.0.2 join
-pause
-java -classpath .\build\classes\java\main pt.up.fe.cpd.client.TestClient 127.0.0.3 join
+java -classpath .\build\classes\java\main pt.up.fe.cpd.client.TestClient 127.0.0.1:9002 put whatever
+
+::java -classpath .\build\classes\java\main pt.up.fe.cpd.client.TestClient 127.0.0.2 join
+::pause
+::java -classpath .\build\classes\java\main pt.up.fe.cpd.client.TestClient 127.0.0.3 join

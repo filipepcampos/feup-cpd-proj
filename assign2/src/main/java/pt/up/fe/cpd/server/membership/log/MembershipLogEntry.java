@@ -1,4 +1,4 @@
-package pt.up.fe.cpd.server;
+package pt.up.fe.cpd.server.membership.log;
 
 public class MembershipLogEntry {
     private String address;
