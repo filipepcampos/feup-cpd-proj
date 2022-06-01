@@ -4,6 +4,7 @@ import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.utils.HashUtils;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 
 public class RemoveFiles implements Runnable {
     private final NodeInfo currentNode;
@@ -21,7 +22,10 @@ public class RemoveFiles implements Runnable {
         File directory = new File(currentNode.getAddress() + "_" + currentNode.getPort());
 
         File[] matchingFiles = directory.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {   
+            public boolean accept(File dir, String name) {
+                if(name.endsWith(".tombstone")){
+                    name = name.replace(".tombstone", "");
+                }
                 byte[] fileKey = HashUtils.keyStringToByte(name);
 
                 System.out.println(currentNode + " [" + HashUtils.keyByteToString(lowestKey) + "," + HashUtils.keyByteToString(highestKey) + "] searching for " + name);

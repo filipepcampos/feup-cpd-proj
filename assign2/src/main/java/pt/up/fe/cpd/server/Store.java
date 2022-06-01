@@ -41,6 +41,12 @@ public class Store extends Node implements KeyValueStore {
                 directory.mkdir();
             }
 
+            File tombstoneFile = new File(directoryName + "/" + key + ".tombstone");
+            if(tombstoneFile.exists()){
+                data.close();
+                return false;
+            }
+
             fileOutputStream = new FileOutputStream(directoryName + "/" + key); // TODO: What name should the file have
         } catch(FileNotFoundException e){   // TODO: This is quite irrelevant
             System.out.println("File cannot be found.");
@@ -49,6 +55,8 @@ public class Store extends Node implements KeyValueStore {
             } catch(IOException e1){
                 e1.printStackTrace();
             }
+            return false;
+        } catch(IOException e){
             return false;
         }
         
@@ -95,6 +103,14 @@ public class Store extends Node implements KeyValueStore {
     public boolean delete(String key) {
         String directoryName = this.getAddress() + "_" + this.getPort();
         File file = new File(directoryName + "/" + key);
+
+        File tombstoneFile = new File(directoryName + "/" + key + ".tombstone");
+        try {
+            tombstoneFile.createNewFile();
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+
         return file.delete();
     }
 

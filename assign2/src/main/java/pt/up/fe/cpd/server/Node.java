@@ -18,6 +18,7 @@ import pt.up.fe.cpd.server.membership.cluster.SearchableCluster;
 import pt.up.fe.cpd.server.membership.tasks.MembershipInformationListener;
 import pt.up.fe.cpd.server.membership.tasks.MulticastListener;
 import pt.up.fe.cpd.server.membership.tasks.MulticastMembershipSender;
+import pt.up.fe.cpd.utils.HashUtils;
 
 public abstract class Node extends ActiveNodeInfo implements MembershipService {
     final private SearchableCluster cluster;
@@ -38,6 +39,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
 
         this.membershipCounter = 0; // TODO: Write/Read from file
         this.executor = Executors.newFixedThreadPool(8);
+        printDebugInfo("Node online with hash " + HashUtils.keyByteToString(getNodeId()));
     }
 
     protected ExecutorService getExecutor() {

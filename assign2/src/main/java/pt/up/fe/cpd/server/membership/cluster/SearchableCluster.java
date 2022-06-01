@@ -38,4 +38,9 @@ public class SearchableCluster extends Cluster implements ClusterSearcher{
     public boolean isActiveNode(NodeInfo nodeInfo) {
         return nodeInfo.equals((NodeInfo) activeNode);
     }
+
+    @Override
+    public ActiveNodeInfo getActiveNode(){
+        return activeNode;
+    }
 }

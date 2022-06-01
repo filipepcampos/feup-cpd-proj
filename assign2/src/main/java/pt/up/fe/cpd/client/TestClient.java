@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.MessageDigest;
+import java.time.Instant;
 
 import pt.up.fe.cpd.utils.HashUtils;
 import pt.up.fe.cpd.utils.Pair;
@@ -77,7 +78,7 @@ public class TestClient {
         byte[] key;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");    
-            key = digest.digest(file_path.getBytes(StandardCharsets.UTF_8));
+            key = digest.digest((file_path + Instant.now().getEpochSecond()).getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) { // This should never happen
             e.printStackTrace();
             return "";

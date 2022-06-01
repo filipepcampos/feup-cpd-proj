@@ -33,7 +33,11 @@ public class ReplicateFiles implements Runnable {
         System.out.println(this.currentNode + " Opening " + directory.getName() + " and searching for matching files...");
         System.out.println(this.currentNode + " keys:" + HashUtils.keyByteToString(lowestKey) + " to " + HashUtils.keyByteToString(highestKey));
         File[] matchingFiles = directory.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {               
+            public boolean accept(File dir, String name) {
+                if (name.endsWith(".tombstone")){
+                    name = name.replace(".tombstone", "");
+                }
+
                 byte[] fileKey = HashUtils.keyStringToByte(name);
 
                 System.out.println(currentNode + " [" + HashUtils.keyByteToString(lowestKey) + "," + HashUtils.keyByteToString(highestKey) + "] searching for " + name);

@@ -14,7 +14,6 @@ public class FileTransfer {
                 output.write(buffer, 0, count);
             }
         } catch(IOException e){
-            e.printStackTrace();
             return false;
         }
         return true;

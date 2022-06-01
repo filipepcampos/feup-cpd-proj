@@ -7,8 +7,10 @@ import java.net.*;
 import java.util.Scanner;
 
 import pt.up.fe.cpd.networking.FileTransfer;
+import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
+import pt.up.fe.cpd.server.replication.RemoveFiles;
 import pt.up.fe.cpd.server.store.KeyValueStore;
 import pt.up.fe.cpd.utils.HashUtils;
 
@@ -34,11 +36,6 @@ public class StoreOperationHandler implements Runnable {
             String[] splitHeader = header.split(" ");
             String operation = splitHeader[0];
 
-            // Mensagens novas:
-                // REPLICATE PUT key
-                // REPLICATE DELETE key
-                // REPLICATE DELETE_RANGE key1 key2
-
             if (operation.equals("MEMBERSHIP")) {
                 scanner.close();
                 dataInputStream.close();
@@ -48,10 +45,17 @@ public class StoreOperationHandler implements Runnable {
 
             System.out.println("[StoreOperationHandler] opened");
             
+            // REPLICATE PUT key
+            // REPLICATE DELETE key
+            // REPLICATE DELETE_RANGE key1 key2
             if (operation.equals("REPLICATE")) {
                 operation = splitHeader[1];
-                String key = splitHeader[2];
-                handleRequest(operation, key, dataInputStream);
+                if(operation.equals("DELETE_RANGE")){
+                    handleDeleteRange(splitHeader[1], splitHeader[2]);
+                } else {
+                    String key = splitHeader[2];
+                    handleRequest(operation, key, dataInputStream);    
+                }
             } else {
                 String key = splitHeader[1];
                 NodeInfo node = this.searcher.findNodeByKey(HashUtils.keyStringToByte(key));
@@ -70,6 +74,12 @@ public class StoreOperationHandler implements Runnable {
         } catch(IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    private void handleDeleteRange(String lowestKey, String highestKey) {
+        ActiveNodeInfo activeNode = this.searcher.getActiveNode();
+        RemoveFiles task = new RemoveFiles(activeNode, HashUtils.keyStringToByte(lowestKey), HashUtils.keyStringToByte(highestKey));
+        task.run();
     }
 
     private void handleRequest(String operation, String key, DataInputStream dataInputStream) throws IOException {
