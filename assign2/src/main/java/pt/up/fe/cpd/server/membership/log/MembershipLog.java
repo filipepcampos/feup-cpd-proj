@@ -15,7 +15,7 @@ public class MembershipLog {
         return entries;
     }
 
-    public void addEntry(MembershipLogEntry entry) {
+    public boolean addEntry(MembershipLogEntry entry) {
         /*
         Merging Rules
         - Rule 1: If the event is already in the local log, skip it
@@ -26,15 +26,15 @@ public class MembershipLog {
             log, and add the newer event at the tail of the log (i.e. as if it was a new event)
         */
         
-        if (entries.contains(entry)) return;
+        if (entries.contains(entry)) return false;
         else {
             for (MembershipLogEntry compareEntry : entries) {
                 if (entry.equals(compareEntry)) {
-                    if (entry.getMembershipCounter() < compareEntry.getMembershipCounter()) return;
+                    if (entry.getMembershipCounter() < compareEntry.getMembershipCounter()) return false;
                     if (entry.getMembershipCounter() > compareEntry.getMembershipCounter()) {
                         this.entries.remove(compareEntry);
                         this.entries.add(entry);
-                        return;
+                        return true;
                     }
                 }
             }
@@ -44,6 +44,7 @@ public class MembershipLog {
             this.entries.removeFirst();
         }
         this.entries.add(entry);
+        return true;
     }
 
     @Override

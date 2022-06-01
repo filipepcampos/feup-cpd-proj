@@ -140,11 +140,14 @@ public class MulticastListener implements Runnable {
             return;
         }
 
-        Pair<NodeInfo, NodeInfo> oldNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
+        this.joinCluster(parsedNodeInfo, receivedCounter);        
+    }
 
+    private void joinCluster(NodeInfo newNodeInfo, int membershipCounter){
+        Pair<NodeInfo, NodeInfo> oldNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
         // Replication "transaction"
         synchronized(clusterManager){
-            clusterManager.registerJoinNode(parsedNodeInfo, receivedCounter);
+            clusterManager.registerJoinNode(newNodeInfo, membershipCounter);
             Pair<NodeInfo, NodeInfo> newNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
             
             System.out.println(nodeInfo + " handling join,");
@@ -158,7 +161,7 @@ public class MulticastListener implements Runnable {
                 NodeInfo ENode = oldNeighbours.second;
                 
                 // Send files ]B,D]
-                executor.execute(new SendReplicateFilesMessage(DNode, parsedNodeInfo, BNode.getNodeId(), DNode.getNodeId()));
+                executor.execute(new SendReplicateFilesMessage(DNode, newNodeInfo, BNode.getNodeId(), DNode.getNodeId()));
 
                 if(clusterViewer.getNodeCount() > 3){
                     // Remove ]A,B]
@@ -186,7 +189,7 @@ public class MulticastListener implements Runnable {
             }
         }
     }
-
+    
     private void handleLeave(String receivedData){
         Pair<ActiveNodeInfo, Integer> parsedData;
         try {
@@ -204,11 +207,15 @@ public class MulticastListener implements Runnable {
             return;
         }
 
+        this.leaveCluster(parsedNodeInfo, receivedCounter);
+    }
+    
+    private void leaveCluster(NodeInfo oldNode, int membershipCounter) {
         Pair<NodeInfo, NodeInfo> oldNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
 
         // Replication "transaction"
         synchronized(clusterManager){
-            clusterManager.registerLeaveNode(parsedNodeInfo, receivedCounter);
+            clusterManager.registerLeaveNode(oldNode, membershipCounter);
             Pair<NodeInfo, NodeInfo> newNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
             
             System.out.println(nodeInfo + " handling leave,");
@@ -237,8 +244,6 @@ public class MulticastListener implements Runnable {
                 executor.execute(new SendReplicateFilesMessage(BNode, DNode, ANode.getNodeId(), BNode.getNodeId()));
             }
         }
-
-        clusterManager.registerLeaveNode(parsedNodeInfo, receivedCounter);
     }
 
     private void handleMembership(String receivedData){
@@ -250,7 +255,15 @@ public class MulticastListener implements Runnable {
             String receivedAddress          = splitNodeId[0];
             int receivedPort                = Integer.parseInt(splitNodeId[1]);
             int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
-            clusterManager.addLogEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
+            boolean updated = clusterManager.addLogEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
+            if(updated){
+                NodeInfo newNodeInfo = new NodeInfo(receivedAddress, receivedPort);
+                if(receivedMembershipCounter % 2 == 0){
+                    this.joinCluster(newNodeInfo, receivedMembershipCounter);
+                } else {
+                    this.leaveCluster(newNodeInfo, receivedMembershipCounter);
+                }
+            }
         }
     }
 }

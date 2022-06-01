@@ -4,7 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.io.IOException;
 import java.net.*;
 import pt.up.fe.cpd.networking.TCPListener;
-import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.ConnectionStatus;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
@@ -32,9 +31,7 @@ public class StoreOperationListener implements Runnable {
                 Socket socket = listener.accept();
                 System.out.println("[debug, storeoperationlistener] accepted");
                 executor.execute(new StoreOperationHandler(keyValueStore, socket, searcher, executor));
-            } catch(IOException e) {
-                e.printStackTrace();
-            }
+            } catch(IOException e) {}
         }
     }
 }

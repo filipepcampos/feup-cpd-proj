@@ -32,8 +32,8 @@ public class Cluster implements ClusterManager, ClusterViewer{
     }
 
     @Override
-    public void addLogEntry(MembershipLogEntry logEntry){
-        log.addEntry(logEntry);
+    public boolean addLogEntry(MembershipLogEntry logEntry){
+        return log.addEntry(logEntry);
     }
 
     @Override
