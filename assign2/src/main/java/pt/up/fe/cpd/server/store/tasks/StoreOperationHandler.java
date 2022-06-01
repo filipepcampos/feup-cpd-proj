@@ -5,24 +5,30 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
 
 import pt.up.fe.cpd.networking.FileTransfer;
 import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.replication.RemoveFiles;
+import pt.up.fe.cpd.server.replication.SendReplicateFileMessage;
+import pt.up.fe.cpd.server.replication.SendDeleteMessage;
 import pt.up.fe.cpd.server.store.KeyValueStore;
 import pt.up.fe.cpd.utils.HashUtils;
+import pt.up.fe.cpd.utils.Pair;
 
 public class StoreOperationHandler implements Runnable {
     final private KeyValueStore keyValueStore;
     final private Socket socket;
     final private ClusterSearcher searcher;
+    final private ExecutorService executor;
     
-    public StoreOperationHandler(KeyValueStore keyValueStore, Socket socket, ClusterSearcher searcher) {
+    public StoreOperationHandler(KeyValueStore keyValueStore, Socket socket, ClusterSearcher searcher, ExecutorService executor) {
         this.keyValueStore = keyValueStore;
         this.socket = socket;
         this.searcher = searcher;
+        this.executor = executor;
     }
 
     @Override
@@ -51,10 +57,10 @@ public class StoreOperationHandler implements Runnable {
             if (operation.equals("REPLICATE")) {
                 operation = splitHeader[1];
                 if(operation.equals("DELETE_RANGE")){
-                    handleDeleteRange(splitHeader[1], splitHeader[2]);
+                    handleDeleteRange(splitHeader[2], splitHeader[3]);
                 } else {
                     String key = splitHeader[2];
-                    handleRequest(operation, key, dataInputStream);    
+                    handleReplicationRequest(operation, key, dataInputStream);    
                 }
             } else {
                 String key = splitHeader[1];
@@ -83,6 +89,33 @@ public class StoreOperationHandler implements Runnable {
     }
 
     private void handleRequest(String operation, String key, DataInputStream dataInputStream) throws IOException {
+        this.handleReplicationRequest(operation, key, dataInputStream);
+        NodeInfo currentNode = this.searcher.getActiveNode();
+        Pair<NodeInfo, NodeInfo> neighbours = searcher.findTwoClosestNodes(currentNode);
+
+        switch(operation){
+            case "PUT":
+                // Replicate files to the two adjacent nodes
+                if(!neighbours.first.equals(currentNode)){ // More than 1 node in the cluster
+                    executor.execute(new SendReplicateFileMessage(currentNode, neighbours.first, HashUtils.keyStringToByte(key)));
+                    if(!neighbours.first.equals(neighbours.second)){ // If there's only 2 nodes the neighbours will be the same node
+                        executor.execute(new SendReplicateFileMessage(currentNode, neighbours.second, HashUtils.keyStringToByte(key)));
+                    }
+                }
+                break;
+            case "DELETE":
+                // Replicate tombstone files to the two adjacent neighbours
+                if(!neighbours.first.equals(currentNode)){ // More than 1 node in the cluster
+                    executor.execute(new SendDeleteMessage(neighbours.first, HashUtils.keyStringToByte(key)));
+                    if(!neighbours.first.equals(neighbours.second)){ // If there's only 2 nodes the neighbours will be the same node
+                        executor.execute(new SendDeleteMessage(neighbours.second, HashUtils.keyStringToByte(key)));
+                    }
+                }
+                break;
+        }
+    }
+
+    private void handleReplicationRequest(String operation, String key, DataInputStream dataInputStream) throws IOException {
         switch(operation) {
             case "GET":
                 DataOutputStream dataOutputStream = new DataOutputStream(this.socket.getOutputStream());

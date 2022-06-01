@@ -6,21 +6,19 @@ import pt.up.fe.cpd.utils.HashUtils;
 import java.io.IOException;
 import java.net.InetAddress;
 
-public class SendDeleteRangeMessage implements Runnable {
+public class SendDeleteMessage implements Runnable {
     private final NodeInfo targetNode;
-    private final byte[] lowestKey;
-    private final byte[] highestKey;
+    private final byte[] key;
 
-    public SendDeleteRangeMessage(NodeInfo targetNode, byte[] lowestKey, byte[] highestKey){
+    public SendDeleteMessage(NodeInfo targetNode, byte[] key){
         this.targetNode = targetNode;
-        this.lowestKey = lowestKey;
-        this.highestKey = highestKey;
+        this.key = key;
     }
 
     @Override
     public void run(){
         InetAddress address;
-        String message = "REPLICATE DELETE_RANGE " + HashUtils.keyByteToString(lowestKey) + " " + HashUtils.keyByteToString(highestKey);
+        String message = "REPLICATE DELETE " + HashUtils.keyByteToString(key);
         System.out.println("Sending " + message + " to " + targetNode);
         try{
             address = InetAddress.getByName(targetNode.getAddress());

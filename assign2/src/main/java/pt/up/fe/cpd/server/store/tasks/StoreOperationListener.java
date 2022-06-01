@@ -31,7 +31,7 @@ public class StoreOperationListener implements Runnable {
             try {
                 Socket socket = listener.accept();
                 System.out.println("[debug, storeoperationlistener] accepted");
-                executor.execute(new StoreOperationHandler(keyValueStore, socket, searcher));
+                executor.execute(new StoreOperationHandler(keyValueStore, socket, searcher, executor));
             } catch(IOException e) {
                 e.printStackTrace();
             }

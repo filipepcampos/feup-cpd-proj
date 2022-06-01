@@ -18,6 +18,7 @@ import pt.up.fe.cpd.server.membership.cluster.SearchableCluster;
 import pt.up.fe.cpd.server.membership.tasks.MembershipInformationListener;
 import pt.up.fe.cpd.server.membership.tasks.MulticastListener;
 import pt.up.fe.cpd.server.membership.tasks.MulticastMembershipSender;
+import pt.up.fe.cpd.server.replication.RemoveFiles;
 import pt.up.fe.cpd.utils.HashUtils;
 
 public abstract class Node extends ActiveNodeInfo implements MembershipService {
@@ -139,6 +140,8 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         synchronized (connection){
             connection.setStatus(ConnectionStatus.DISCONNECTED);
         }
+
+        executor.execute(new RemoveFiles(this, this.getNodeId(), this.getNodeId())); // Removes all the files
     }
 
     private void printDebugInfo(String message){

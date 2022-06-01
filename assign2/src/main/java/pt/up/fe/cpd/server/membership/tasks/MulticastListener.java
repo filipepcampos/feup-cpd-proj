@@ -8,7 +8,7 @@ import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.membership.ConnectionStatus;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 import pt.up.fe.cpd.server.replication.RemoveFiles;
-import pt.up.fe.cpd.server.replication.ReplicateFiles;
+import pt.up.fe.cpd.server.replication.SendReplicateFilesMessage;
 import pt.up.fe.cpd.server.replication.SendDeleteRangeMessage;
 import pt.up.fe.cpd.utils.Pair;
 
@@ -158,13 +158,14 @@ public class MulticastListener implements Runnable {
                 NodeInfo ENode = oldNeighbours.second;
                 
                 // Send files ]B,D]
-                executor.execute(new ReplicateFiles(DNode, parsedNodeInfo, BNode.getNodeId(), DNode.getNodeId()));
+                executor.execute(new SendReplicateFilesMessage(DNode, parsedNodeInfo, BNode.getNodeId(), DNode.getNodeId()));
 
                 if(clusterViewer.getNodeCount() > 3){
                     // Remove ]A,B]
                     executor.execute(new RemoveFiles(DNode, ANode.getNodeId(), BNode.getNodeId()));
 
-                    // (On Node E) Remove ]B,C]                    
+                    // (On Node E) Remove ]B,C]  
+                    System.out.println(this.nodeInfo + " --> (" + ENode + "," + BNode + "," + CNode + ")");                
                     executor.execute(new SendDeleteRangeMessage(ENode, BNode.getNodeId(), CNode.getNodeId()));
                 }
             }
@@ -176,7 +177,7 @@ public class MulticastListener implements Runnable {
                 NodeInfo DNode = oldNeighbours.second;
 
                 // Send files ]A,B] to C
-                executor.execute(new ReplicateFiles(BNode, CNode, ANode.getNodeId(), BNode.getNodeId()));
+                executor.execute(new SendReplicateFilesMessage(BNode, CNode, ANode.getNodeId(), BNode.getNodeId()));
                 
                 if(clusterViewer.getNodeCount() > 3){
                     // Remove files ]C,D] 
@@ -201,6 +202,40 @@ public class MulticastListener implements Runnable {
         if (parsedNodeInfo.getAddress().equals(this.nodeInfo.getAddress()) &&
                 parsedNodeInfo.getPort() == this.nodeInfo.getPort()) {
             return;
+        }
+
+        Pair<NodeInfo, NodeInfo> oldNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
+
+        // Replication "transaction"
+        synchronized(clusterManager){
+            clusterManager.registerLeaveNode(parsedNodeInfo, receivedCounter);
+            Pair<NodeInfo, NodeInfo> newNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
+            
+            System.out.println(nodeInfo + " handling leave,");
+
+            if(!oldNeighbours.first.equals(newNeighbours.first)){
+                // This is Node D
+                NodeInfo BNode = newNeighbours.first;
+                NodeInfo CNode = oldNeighbours.first;
+                NodeInfo DNode = this.nodeInfo;
+                NodeInfo ENode = newNeighbours.second;
+
+                // Send ]C,D] to B node
+                executor.execute(new SendReplicateFilesMessage(DNode, BNode, CNode.getNodeId(), DNode.getNodeId()));
+
+                // Send ]B,C] to E node
+                executor.execute(new SendReplicateFilesMessage(DNode, ENode, BNode.getNodeId(), CNode.getNodeId()));           
+            }
+
+            if(!oldNeighbours.second.equals(newNeighbours.second)){
+                // This is Node B
+                NodeInfo ANode = oldNeighbours.first;
+                NodeInfo BNode = this.nodeInfo;
+                NodeInfo DNode = newNeighbours.second;
+
+                // Send ]A,B] to D node
+                executor.execute(new SendReplicateFilesMessage(BNode, DNode, ANode.getNodeId(), BNode.getNodeId()));
+            }
         }
 
         clusterManager.registerLeaveNode(parsedNodeInfo, receivedCounter);

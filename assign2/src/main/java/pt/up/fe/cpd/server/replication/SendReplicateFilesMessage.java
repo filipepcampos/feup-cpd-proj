@@ -13,13 +13,13 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 
-public class ReplicateFiles implements Runnable {
+public class SendReplicateFilesMessage implements Runnable {
     private final NodeInfo currentNode;
     private final NodeInfo targetNode;
     private final byte[] lowestKey;
     private final byte[] highestKey;
 
-    public ReplicateFiles(NodeInfo currentNode, NodeInfo targetNode, byte[] lowestKey, byte[] highestKey){
+    public SendReplicateFilesMessage(NodeInfo currentNode, NodeInfo targetNode, byte[] lowestKey, byte[] highestKey){
         this.currentNode = currentNode;
         this.targetNode = targetNode;
         this.lowestKey = lowestKey;
@@ -28,10 +28,9 @@ public class ReplicateFiles implements Runnable {
 
     @Override
     public void run(){
-        File directory = new File(currentNode.getAddress() + "_" + currentNode.getPort());
+        File directory = new File("store_" + HashUtils.keyByteToString(currentNode.getNodeId()));
 
-        System.out.println(this.currentNode + " Opening " + directory.getName() + " and searching for matching files...");
-        System.out.println(this.currentNode + " keys:" + HashUtils.keyByteToString(lowestKey) + " to " + HashUtils.keyByteToString(highestKey));
+        System.out.println(this.currentNode + " Replicating keys:" + HashUtils.keyByteToString(lowestKey).substring(0, 5) + " to " + HashUtils.keyByteToString(highestKey).substring(0, 5));
         File[] matchingFiles = directory.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
                 if (name.endsWith(".tombstone")){
@@ -39,8 +38,6 @@ public class ReplicateFiles implements Runnable {
                 }
 
                 byte[] fileKey = HashUtils.keyStringToByte(name);
-
-                System.out.println(currentNode + " [" + HashUtils.keyByteToString(lowestKey) + "," + HashUtils.keyByteToString(highestKey) + "] searching for " + name);
 
                 int comparison = HashUtils.compare(lowestKey, highestKey);
                 if(comparison == 0){
@@ -69,7 +66,7 @@ public class ReplicateFiles implements Runnable {
     }
 
     private void sendReplicationOperation(File file){
-        System.out.println(currentNode + " replicating " + file.getName() + " to node " + targetNode);
+        System.out.println(currentNode + " replicating " + file.getName().substring(0, 5) + " to node " + targetNode);
         try {
             InetAddress targetNodeAddress = InetAddress.getByName(targetNode.getAddress());
             Socket socket = new Socket(targetNodeAddress, targetNode.getPort());

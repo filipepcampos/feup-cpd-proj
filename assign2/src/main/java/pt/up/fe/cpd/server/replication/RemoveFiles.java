@@ -19,7 +19,7 @@ public class RemoveFiles implements Runnable {
 
     @Override
     public void run(){
-        File directory = new File(currentNode.getAddress() + "_" + currentNode.getPort());
+        File directory = new File("store_" + HashUtils.keyByteToString(currentNode.getNodeId()));
 
         File[] matchingFiles = directory.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
@@ -27,8 +27,6 @@ public class RemoveFiles implements Runnable {
                     name = name.replace(".tombstone", "");
                 }
                 byte[] fileKey = HashUtils.keyStringToByte(name);
-
-                System.out.println(currentNode + " [" + HashUtils.keyByteToString(lowestKey) + "," + HashUtils.keyByteToString(highestKey) + "] searching for " + name);
 
                 int comparison = HashUtils.compare(lowestKey, highestKey);
                 if(comparison == 0){
@@ -49,8 +47,11 @@ public class RemoveFiles implements Runnable {
             }
         });
 
+        System.out.println(this.currentNode + " Removing keys:" + HashUtils.keyByteToString(lowestKey).substring(0, 5) + " to " + HashUtils.keyByteToString(highestKey).substring(0, 5));
+
         if(matchingFiles != null){
             for (File file : matchingFiles) {
+                System.out.println(currentNode + " removing " + file.getName().substring(0, 5));
                 file.delete();
             }
         }
