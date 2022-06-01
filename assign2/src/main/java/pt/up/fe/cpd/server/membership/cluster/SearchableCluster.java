@@ -1,5 +1,7 @@
 package pt.up.fe.cpd.server.membership.cluster;
 
+import java.io.File;
+
 import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.utils.Pair;
@@ -7,8 +9,8 @@ import pt.up.fe.cpd.utils.Pair;
 public class SearchableCluster extends Cluster implements ClusterSearcher{
     private final ActiveNodeInfo activeNode;
 
-    public SearchableCluster(ActiveNodeInfo activeNode) {
-        super();
+    public SearchableCluster(ActiveNodeInfo activeNode, File directory) {
+        super(directory);
         this.activeNode = activeNode;
     }
 

@@ -1,5 +1,10 @@
 package pt.up.fe.cpd.server;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.*;
 import java.util.concurrent.ExecutorService;
@@ -10,7 +15,6 @@ import java.lang.InterruptedException;
 
 import pt.up.fe.cpd.networking.TCPListener;
 import pt.up.fe.cpd.server.membership.*;
-import pt.up.fe.cpd.server.membership.cluster.Cluster;
 import pt.up.fe.cpd.server.membership.cluster.ClusterManager;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
@@ -33,12 +37,13 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
 
     public Node(String multicastAddress, int multicastPort, String address, int storagePort) throws UnknownHostException {
         super(address, storagePort);
-        this.cluster = new SearchableCluster((ActiveNodeInfo) this);
+        this.cluster = new SearchableCluster((ActiveNodeInfo) this, new File("membership_" + HashUtils.keyByteToString(this.getNodeId())));
         this.multicastAddress = InetAddress.getByName(multicastAddress);
         this.multicastPort = multicastPort;
 
 
         this.membershipCounter = 0; // TODO: Write/Read from file
+        readMembershipCounter();
         this.executor = Executors.newFixedThreadPool(8);
         printDebugInfo("Node online with hash " + HashUtils.keyByteToString(getNodeId()));
     }
@@ -113,6 +118,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         }
 
         this.cluster.registerJoinNode(this, this.membershipCounter);
+        this.saveMembershipCounter();
         this.membershipCounter++;
         executor.execute(new MulticastListener(this, multicastAddress, multicastPort, (ClusterViewer) cluster, (ClusterManager) cluster, (ClusterSearcher) cluster, executor));
         executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, (ClusterViewer) cluster));
@@ -134,14 +140,56 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         catch (IOException e) {
             e.printStackTrace();
         }
-        this.membershipCounter++;
 
         this.close();
         synchronized (connection){
             connection.setStatus(ConnectionStatus.DISCONNECTED);
         }
 
+        this.cluster.registerLeaveNode(this, membershipCounter);
+        this.saveMembershipCounter();
+        this.membershipCounter++;
+
         executor.execute(new RemoveFiles(this, this.getNodeId(), this.getNodeId())); // Removes all the files
+    }
+
+    public String view(){
+        StringBuilder builder = new StringBuilder();
+        builder.append("Node: " + this.toString())
+                .append("\nHash: " + HashUtils.keyByteToString(this.getNodeId()))
+                .append("\nMembership Counter: " + (this.membershipCounter - 1))
+                .append("\nLog:\n ")
+                .append(cluster.getLogRepresentation())
+                .append("\nNode set:\n ")
+                .append(cluster.getNodeRepresentation())
+                .append("\n");
+        return builder.toString();
+    }
+
+    private void saveMembershipCounter(){
+        File file = new File("membership_" + HashUtils.keyByteToString(this.getNodeId()) + "/membership.counter");
+        try {
+            FileOutputStream outputStream = new FileOutputStream(file);
+            outputStream.write(Integer.toString(this.membershipCounter).getBytes("UTF-8"));
+            outputStream.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void readMembershipCounter(){
+        File file = new File("membership_" + HashUtils.keyByteToString(this.getNodeId()) + "/membership.counter");
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            this.membershipCounter = Integer.parseInt(reader.readLine());
+            reader.close();
+        } catch(FileNotFoundException e){
+            this.membershipCounter = 0;
+        } catch(IOException e){
+            this.membershipCounter = 0;
+        }
     }
 
     private void printDebugInfo(String message){

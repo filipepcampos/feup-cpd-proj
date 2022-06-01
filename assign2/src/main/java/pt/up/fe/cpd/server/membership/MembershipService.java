@@ -7,4 +7,6 @@ public interface MembershipService extends Remote {
     void join() throws RemoteException;
 
     void leave() throws RemoteException;
+
+    String view() throws RemoteException;
 }

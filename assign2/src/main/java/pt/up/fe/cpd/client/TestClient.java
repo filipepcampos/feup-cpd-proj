@@ -37,6 +37,7 @@ public class TestClient {
             case "get": get(node_ap, args[2]); break;
             case "put": put(node_ap, args[2]); break;
             case "delete": delete(node_ap, args[2]); break;
+            case "view": view(node_ap); break;
         }
     }
 
@@ -140,6 +141,18 @@ public class TestClient {
             System.out.println("Locating host " + host);
             MembershipService stub = (MembershipService) registry.lookup(host);
             stub.leave();
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+
+    public static void view(String host){
+        try {
+            Registry registry = LocateRegistry.getRegistry();
+            System.out.println("Locating host " + host);
+            MembershipService stub = (MembershipService) registry.lookup(host);
+            System.out.println(stub.view());
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();

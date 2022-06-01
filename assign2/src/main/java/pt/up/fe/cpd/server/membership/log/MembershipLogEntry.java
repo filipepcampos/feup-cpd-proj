@@ -33,6 +33,6 @@ public class MembershipLogEntry {
         if (this == obj) return true;
         if (!(obj instanceof MembershipLogEntry)) {return false;}
         MembershipLogEntry entry = (MembershipLogEntry) obj;
-        return this.address.equals(entry.getAddress()) && this.port == entry.getPort();
+        return this.address.equals(entry.getAddress()) && this.port == entry.getPort() && this.membershipCounter == entry.getMembershipCounter();
     }
 }

@@ -249,6 +249,7 @@ public class MulticastListener implements Runnable {
     private void handleMembership(String receivedData){
         String[] splitMessage = receivedData.split("\n");
         String[] logInfo = splitMessage[2].split(", ");
+        boolean anyLogUpdate = false;
         for(String logData : logInfo){
             String[] splitLog               = logData.split(" ");
             String[] splitNodeId            = splitLog[0].split(":");
@@ -257,6 +258,7 @@ public class MulticastListener implements Runnable {
             int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
             boolean updated = clusterManager.addLogEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
             if(updated){
+                anyLogUpdate = true;
                 NodeInfo newNodeInfo = new NodeInfo(receivedAddress, receivedPort);
                 if(receivedMembershipCounter % 2 == 0){
                     this.joinCluster(newNodeInfo, receivedMembershipCounter);
@@ -264,6 +266,10 @@ public class MulticastListener implements Runnable {
                     this.leaveCluster(newNodeInfo, receivedMembershipCounter);
                 }
             }
+        }
+
+        if(anyLogUpdate){
+            this.clusterManager.saveLog();
         }
     }
 }

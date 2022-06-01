@@ -2,6 +2,12 @@ package pt.up.fe.cpd.server.membership.log;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.LinkedList;
 
 public class MembershipLog {
@@ -9,6 +15,11 @@ public class MembershipLog {
 
     public MembershipLog(){
         this.entries = new LinkedList<>();
+    }
+
+    public MembershipLog(File file){
+        this.entries = new LinkedList<>();
+        this.readFromFile(file);
     }
 
     public List<MembershipLogEntry> getEntries() {
@@ -29,7 +40,8 @@ public class MembershipLog {
         if (entries.contains(entry)) return false;
         else {
             for (MembershipLogEntry compareEntry : entries) {
-                if (entry.equals(compareEntry)) {
+                if (entry.getAddress().equals(compareEntry.getAddress()) &&
+                    entry.getPort() == compareEntry.getPort()) {
                     if (entry.getMembershipCounter() < compareEntry.getMembershipCounter()) return false;
                     if (entry.getMembershipCounter() > compareEntry.getMembershipCounter()) {
                         this.entries.remove(compareEntry);
@@ -45,6 +57,46 @@ public class MembershipLog {
         }
         this.entries.add(entry);
         return true;
+    }
+
+    public void writeToFile(File file) {
+        System.out.println("Trying to write to file " + file.getPath());
+        try{
+            FileOutputStream outputStream = new FileOutputStream(file);
+            String string = entries.stream()
+                                .map(e -> e.toString())
+                                .collect(Collectors.joining("\n")) 
+                                + "\n";
+            outputStream.write(string.getBytes("UTF-8"));
+            outputStream.close();
+        } catch(FileNotFoundException e){
+            System.out.println("File not found");
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void readFromFile(File file){
+        try{
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+
+            String line;
+            while((line = reader.readLine()) != null){
+                System.out.println(file.getName() + " -> " + line);
+                String[] splitLine = line.split(" ");
+                String[] nodeId = splitLine[0].split(":");
+                String address = nodeId[0];
+                int port = Integer.parseInt(nodeId[1]);
+                int membershipCounter = Integer.parseInt(splitLine[1]);
+                this.addEntry(new MembershipLogEntry(address, port, membershipCounter));
+            }
+
+            reader.close();
+        } catch(FileNotFoundException e){
+
+        } catch(IOException e){
+            e.printStackTrace();
+        }
     }
 
     @Override
