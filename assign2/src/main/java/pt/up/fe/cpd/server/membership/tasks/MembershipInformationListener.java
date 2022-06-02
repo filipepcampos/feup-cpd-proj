@@ -12,10 +12,12 @@ import java.util.concurrent.Callable;
 public class MembershipInformationListener implements Callable<Boolean> {
     final private ActiveNodeInfo nodeInfo;
     final private ClusterManager clusterManager;
+    private int neededConnections;
 
-    public MembershipInformationListener(ActiveNodeInfo nodeInfo, ClusterManager clusterManager){
+    public MembershipInformationListener(ActiveNodeInfo nodeInfo, ClusterManager clusterManager, int neededConnections){
         this.nodeInfo = nodeInfo;
         this.clusterManager = clusterManager;
+        this.neededConnections = neededConnections;
     }
 
     @Override
@@ -27,13 +29,14 @@ public class MembershipInformationListener implements Callable<Boolean> {
             return false;
         }
 
-        for(int i = 0; i < 3; ++i){
+        int connectionAttempts = this.neededConnections;
+        for(int i = 0; i < connectionAttempts; ++i){
             try {
                 String message = listener.receive();
 
                 String[] splitMessage = message.split("\n");
                 if(!splitMessage[0].equals("MEMBERSHIP")){
-                    // TODO: Error
+                    return false;
                 }
 
                 String[] nodeListInfo = splitMessage[2].split(", ");
@@ -53,12 +56,15 @@ public class MembershipInformationListener implements Callable<Boolean> {
                     int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
                     clusterManager.addLogEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
                 }
+
+                this.neededConnections--;
             } catch(IOException e) {
                 listener.close();
                 return false;
             }
         }
+
         listener.close();
-        return true;
+        return this.neededConnections == 0;
     }
 }

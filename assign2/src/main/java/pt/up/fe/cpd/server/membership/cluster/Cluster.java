@@ -31,8 +31,10 @@ public class Cluster implements ClusterManager, ClusterViewer{
 
     @Override
     public void registerJoinNode(NodeInfo info, int membershipCounter){
-        log.addEntry(new MembershipLogEntry(info.getAddress(), info.getPort(), membershipCounter));
-        this.saveLog();
+        boolean updated = log.addEntry(new MembershipLogEntry(info.getAddress(), info.getPort(), membershipCounter));
+        if(updated){
+            this.saveLog();
+        }
         nodeSet.add(info);
     }
 

@@ -119,10 +119,13 @@ public class MulticastListener implements Runnable {
                 parsedNodeInfo.getPort() == this.nodeInfo.getPort()) {
             return;
         }
-        // If parsedNodeInfo in log -> dont execute
-        
 
-        executor.execute(new MembershipInformationSender(parsedNodeInfo, clusterViewer));
+        boolean updatedLog = clusterManager.addLogEntry(new MembershipLogEntry(parsedNodeInfo.getAddress(), 
+                                                                               parsedNodeInfo.getPort(), parsedData.second));
+        if(updatedLog){     // Node already sent MEMBERSHIP information
+            clusterManager.saveLog();
+            executor.execute(new MembershipInformationSender(parsedNodeInfo, clusterViewer));
+        }
     }
 
     private void handleJoined(String receivedData){

@@ -60,7 +60,6 @@ public class MembershipLog {
     }
 
     public void writeToFile(File file) {
-        System.out.println("Trying to write to file " + file.getPath());
         try{
             FileOutputStream outputStream = new FileOutputStream(file);
             String string = entries.stream()

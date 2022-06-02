@@ -29,7 +29,6 @@ public class StoreOperationListener implements Runnable {
         while(clusterViewer.getConnectionStatus() == ConnectionStatus.CONNECTED) {
             try {
                 Socket socket = listener.accept();
-                System.out.println("[debug, storeoperationlistener] accepted");
                 executor.execute(new StoreOperationHandler(keyValueStore, socket, searcher, executor));
             } catch(IOException e) {}
         }
