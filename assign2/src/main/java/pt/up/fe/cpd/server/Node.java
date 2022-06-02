@@ -156,6 +156,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
     public String view(){
         StringBuilder builder = new StringBuilder();
         builder.append("Node: " + this.toString())
+                .append("\nStatus: " + this.cluster.getConnectionStatus())
                 .append("\nHash: " + HashUtils.keyByteToString(this.getNodeId()))
                 .append("\nMembership Counter: " + (this.membershipCounter - 1))
                 .append("\nLog:\n ")
