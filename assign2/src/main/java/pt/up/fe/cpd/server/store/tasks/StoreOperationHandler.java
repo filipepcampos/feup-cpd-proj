@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import pt.up.fe.cpd.networking.FileTransfer;
 import pt.up.fe.cpd.server.ActiveNodeInfo;
@@ -72,7 +73,10 @@ public class StoreOperationHandler implements Runnable {
                     handleRequest(operation, key, dataInputStream);
                 } else {
                     System.out.println("not my responsibility... " + node.toString() + " this one's for you");
-                    handleRedirect(node, operation, key, dataInputStream);
+                    boolean sent = handleRedirect(node, operation, key, dataInputStream);
+                    if(!sent){
+                        handleRedirectToCrashedNode(node, operation, key, dataInputStream);
+                    }
                 }
             }
 
@@ -133,7 +137,7 @@ public class StoreOperationHandler implements Runnable {
         }
     }
 
-    private void handleRedirect(NodeInfo node, String operation, String key, DataInputStream clientInputStream) throws IOException {
+    private boolean handleRedirect(NodeInfo node, String operation, String key, DataInputStream clientInputStream) throws IOException {
         InetAddress nodeAddress = InetAddress.getByName(node.getAddress());
 
         Socket nodeSocket;
@@ -141,9 +145,9 @@ public class StoreOperationHandler implements Runnable {
             nodeSocket = new Socket(nodeAddress, node.getPort());
         } catch(ConnectException e){
             System.out.println("Connection to " + node + " refused.");
-            MembershipMessenger message = new MembershipMessenger(MembershipEvent.LEAVE, this.clusterViewer.getMembershipCounter(node), this.multicastAddress, this.multicastPort);
+            MembershipMessenger message = new MembershipMessenger(MembershipEvent.LEAVE, this.clusterViewer.getMembershipCounter(node)+1, this.multicastAddress, this.multicastPort);
             message.send(node.getAddress(), node.getPort());
-            return;
+            return false;
         }
         
         DataOutputStream nodeOutputStream = new DataOutputStream(nodeSocket.getOutputStream());
@@ -162,6 +166,33 @@ public class StoreOperationHandler implements Runnable {
                 FileTransfer.transfer(clientInputStream, nodeOutputStream);
                 break;
         }
+        
         nodeSocket.close();
+        return true;
+    }
+
+    private boolean handleRedirectToCrashedNode(NodeInfo node, String operation, String key, DataInputStream clientInputStream) throws IOException {
+        switch(operation){
+            case "GET":
+                Pair<NodeInfo, NodeInfo> neighbours = this.searcher.findTwoClosestNodes(node);
+                if(!this.handleRedirect(neighbours.first, operation, key, clientInputStream)) {
+                    return this.handleRedirect(neighbours.second, operation, key, clientInputStream);
+                }
+                return true;
+            case "PUT":
+            case "DELETE":
+                for(int i = 0; i < 3; ++i){
+                    NodeInfo keyOwnerNode = this.searcher.findNodeByKey(HashUtils.keyStringToByte(key));
+                    boolean sent = this.handleRedirect(keyOwnerNode, operation, key, clientInputStream);
+                    if(sent) {
+                        return true;
+                    }
+                    try {
+                        TimeUnit.SECONDS.sleep(1);    
+                    } catch(InterruptedException e){}
+                }
+                return false;
+        }
+        return false;
     }
 }

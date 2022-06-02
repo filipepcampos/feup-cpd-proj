@@ -44,6 +44,11 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
 
         this.membershipCounter = 0;
         this.readMembershipCounter();
+        if(this.membershipCounter % 2 != 0){
+            this.membershipCounter += 1;
+            this.saveMembershipCounter();
+        }
+
         this.executor = Executors.newFixedThreadPool(8);
         printDebugInfo("Node online with hash " + HashUtils.keyByteToString(getNodeId()));
     }
@@ -130,7 +135,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         this.saveMembershipCounter();
         this.membershipCounter++;
         executor.execute(new MulticastListener(this, multicastAddress, multicastPort, (ClusterViewer) cluster, (ClusterManager) cluster, (ClusterSearcher) cluster, executor));
-        executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, (ClusterViewer) cluster));
+        executor.execute(new MulticastMembershipSender(multicastAddress, multicastPort, membershipCounter, (ClusterViewer) cluster, this));
     }
 
     public void leave() {

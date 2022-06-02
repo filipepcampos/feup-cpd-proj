@@ -6,6 +6,8 @@ import pt.up.fe.cpd.server.membership.cluster.ClusterManager;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.membership.ConnectionStatus;
+import pt.up.fe.cpd.server.membership.MembershipEvent;
+import pt.up.fe.cpd.server.membership.MembershipMessenger;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 import pt.up.fe.cpd.server.replication.RemoveFiles;
 import pt.up.fe.cpd.server.replication.SendReplicateFilesMessage;
@@ -17,6 +19,8 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 public class MulticastListener implements Runnable {
@@ -27,6 +31,7 @@ public class MulticastListener implements Runnable {
     final private ClusterManager clusterManager;
     final private ClusterSearcher clusterSearcher;
     final private ExecutorService executor;
+    final private Map<NodeInfo, Integer> nodeTimeToLiveMap;
 
     public MulticastListener(ActiveNodeInfo nodeInfo, InetAddress multicastAddress, int multicastPort,
                              ClusterViewer clusterViewer, ClusterManager clusterManager, ClusterSearcher clusterSearcher,
@@ -38,6 +43,8 @@ public class MulticastListener implements Runnable {
         this.clusterManager = clusterManager;
         this.clusterSearcher = clusterSearcher;
         this.executor = executor;
+        this.nodeTimeToLiveMap = new HashMap<>();
+        this.clusterViewer.getNodeSet().forEach(n -> this.nodeTimeToLiveMap.put(n, clusterViewer.getNodeCount() * 3));
     }
 
     @Override
@@ -97,7 +104,7 @@ public class MulticastListener implements Runnable {
         socket.close();
     }
 
-    private Pair<ActiveNodeInfo, Integer> parseJoinLeaveMessage(String receivedData) throws UnknownHostException {
+    private Pair<ActiveNodeInfo, Integer> parseMessageHeader(String receivedData) throws UnknownHostException {
         String[] splitString = receivedData.split(" ");
         String receivedAddress = splitString[1];
         int receivedPort = Integer.parseInt(splitString[2]);
@@ -108,7 +115,7 @@ public class MulticastListener implements Runnable {
     private void handleJoin(String receivedData){
         Pair<ActiveNodeInfo, Integer> parsedData;
         try {
-            parsedData = parseJoinLeaveMessage(receivedData);
+            parsedData = parseMessageHeader(receivedData);
         } catch (IOException e){
             e.printStackTrace();
             return;
@@ -131,7 +138,7 @@ public class MulticastListener implements Runnable {
     private void handleJoined(String receivedData){
         Pair<ActiveNodeInfo, Integer> parsedData;
         try {
-            parsedData = parseJoinLeaveMessage(receivedData);
+            parsedData = parseMessageHeader(receivedData);
         } catch (IOException e){
             e.printStackTrace();
             return;
@@ -149,7 +156,8 @@ public class MulticastListener implements Runnable {
     }
 
     private void joinCluster(NodeInfo newNodeInfo, int membershipCounter){
-        Pair<NodeInfo, NodeInfo> oldNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
+        this.nodeTimeToLiveMap.put(newNodeInfo, this.clusterViewer.getNodeCount() * 3);
+        Pair<NodeInfo, NodeInfo> oldNeighbours = this.clusterSearcher.findTwoClosestNodes(this.nodeInfo);
         // Replication "transaction"
         synchronized(clusterManager){
             clusterManager.registerJoinNode(newNodeInfo, membershipCounter);
@@ -198,7 +206,7 @@ public class MulticastListener implements Runnable {
     private void handleLeave(String receivedData){
         Pair<ActiveNodeInfo, Integer> parsedData;
         try {
-            parsedData = parseJoinLeaveMessage(receivedData);
+            parsedData = parseMessageHeader(receivedData);
         } catch(IOException e){
             e.printStackTrace();
             return;
@@ -212,10 +220,17 @@ public class MulticastListener implements Runnable {
             return;
         }
 
+        boolean updatedLog = clusterManager.addLogEntry(new MembershipLogEntry(parsedNodeInfo.getAddress(), 
+                                                                               parsedNodeInfo.getPort(), parsedData.second));
+        if(updatedLog){
+            clusterManager.saveLog();
+        }
+
         this.leaveCluster(parsedNodeInfo, receivedCounter);
     }
     
     private void leaveCluster(NodeInfo oldNode, int membershipCounter) {
+        this.nodeTimeToLiveMap.remove(oldNode);
         Pair<NodeInfo, NodeInfo> oldNeighbours = clusterSearcher.findTwoClosestNodes(this.nodeInfo);
 
         // Replication "transaction"
@@ -253,28 +268,53 @@ public class MulticastListener implements Runnable {
 
     private void handleMembership(String receivedData){
         String[] splitMessage = receivedData.split("\n");
+
+        String[] splitHeader = splitMessage[0].split(" ");
+        String senderAddress = splitHeader[1];
+        int senderPort = Integer.parseInt(splitHeader[2]);
+
         String[] logInfo = splitMessage[2].split(", ");
         boolean anyLogUpdate = false;
         for(String logData : logInfo){
-            String[] splitLog               = logData.split(" ");
-            String[] splitNodeId            = splitLog[0].split(":");
-            String receivedAddress          = splitNodeId[0];
-            int receivedPort                = Integer.parseInt(splitNodeId[1]);
-            int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
-            boolean updated = clusterManager.addLogEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
+            String[] splitLog = logData.split(" ");
+            String[] splitNodeId = splitLog[0].split(":");
+            String entryAddress = splitNodeId[0];
+            int entryPort = Integer.parseInt(splitNodeId[1]);
+            int entryMembershipCounter = Integer.parseInt(splitLog[1]);
+            boolean updated = clusterManager.addLogEntry(new MembershipLogEntry(entryAddress, entryPort, entryMembershipCounter));
             if(updated){
                 anyLogUpdate = true;
-                NodeInfo newNodeInfo = new NodeInfo(receivedAddress, receivedPort);
-                if(receivedMembershipCounter % 2 == 0){
-                    this.joinCluster(newNodeInfo, receivedMembershipCounter);
+                NodeInfo newNodeInfo = new NodeInfo(entryAddress, entryPort);
+                if(entryMembershipCounter % 2 == 0){
+                    this.joinCluster(newNodeInfo, entryMembershipCounter);
                 } else {
-                    this.leaveCluster(newNodeInfo, receivedMembershipCounter);
+                    this.leaveCluster(newNodeInfo, entryMembershipCounter);
                 }
             }
         }
 
+        this.updateTimeToLive(new NodeInfo(senderAddress, senderPort));
+
         if(anyLogUpdate){
             this.clusterManager.saveLog();
         }
+    }
+    
+    private void updateTimeToLive(NodeInfo info){
+        for(Map.Entry<NodeInfo, Integer> entry : this.nodeTimeToLiveMap.entrySet()){
+            if(entry.getValue() <= 1 && !entry.getKey().equals(info)){
+                NodeInfo n = entry.getKey();
+                System.out.println(n + " has been unresponsive for too long, killing it with fire.");
+                MembershipMessenger message = new MembershipMessenger(MembershipEvent.LEAVE, this.clusterViewer.getMembershipCounter(n)+1, this.multicastAddress, this.multicastPort);
+                try {
+                    message.send(n.getAddress(), n.getPort());
+                } catch(IOException e){
+                    e.printStackTrace();
+                }
+            } else {
+                this.nodeTimeToLiveMap.put(entry.getKey(), entry.getValue() - 1);
+            }
+        }
+        this.nodeTimeToLiveMap.put(info, this.clusterViewer.getNodeCount() * 3);
     }
 }

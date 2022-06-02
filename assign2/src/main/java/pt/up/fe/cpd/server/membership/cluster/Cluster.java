@@ -7,6 +7,7 @@ import pt.up.fe.cpd.server.membership.log.MembershipLog;
 import pt.up.fe.cpd.server.membership.log.MembershipLogEntry;
 
 import java.io.File;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -83,5 +84,10 @@ public class Cluster implements ClusterManager, ClusterViewer{
     @Override
     public int getMembershipCounter(NodeInfo node) {
         return log.getCounter(node);
+    }
+
+    @Override
+    public Set<NodeInfo> getNodeSet(){
+        return this.nodeSet;
     }
 }

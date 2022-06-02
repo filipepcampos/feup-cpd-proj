@@ -21,9 +21,24 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 public class Store extends Node implements KeyValueStore {
+    private final String directory;
 
     public Store(String multicastAddress, int multicastPort, String address, int storagePort) throws UnknownHostException {
         super(multicastAddress, multicastPort, address, storagePort);
+        this.directory = "store_" + HashUtils.keyByteToString(this.getNodeId());
+
+        // Clean directory
+        File directoryFile = new File(directory);
+        if(directoryFile.exists()){
+            File[] content = directoryFile.listFiles();
+            if(content != null){
+                for(File f : content){
+                    f.delete();
+                }
+            }
+        } else {
+            directoryFile.mkdir();
+        }
     }
 
     @Override
@@ -37,19 +52,13 @@ public class Store extends Node implements KeyValueStore {
         // Transfer file
         FileOutputStream fileOutputStream;
         try{
-            String directoryName = "store_" + HashUtils.keyByteToString(this.getNodeId());
-            File directory = new File(directoryName);
-            if(!directory.exists()){
-                directory.mkdir();
-            }
-
-            File tombstoneFile = new File(directoryName + "/" + key + ".tombstone");
+            File tombstoneFile = new File(this.directory + "/" + key + ".tombstone");
             if(tombstoneFile.exists()){
                 data.close();
                 return false;
             }
 
-            fileOutputStream = new FileOutputStream(directoryName + "/" + key); // TODO: What name should the file have
+            fileOutputStream = new FileOutputStream(this.directory + "/" + key); // TODO: What name should the file have
         } catch(FileNotFoundException e){   // TODO: This is quite irrelevant
             System.out.println("File cannot be found.");
             try {
@@ -78,8 +87,7 @@ public class Store extends Node implements KeyValueStore {
         // Transfer file
         FileInputStream fileInputStream;
         try{
-            String directoryName = "store_" + HashUtils.keyByteToString(this.getNodeId());
-            fileInputStream = new FileInputStream(directoryName + "/" + key);
+            fileInputStream = new FileInputStream(this.directory + "/" + key);
         } catch(FileNotFoundException e){
             System.out.println("File cannot be found.");
             try {
@@ -103,10 +111,8 @@ public class Store extends Node implements KeyValueStore {
 
     @Override
     public boolean delete(String key) {
-        String directoryName = "store_" + HashUtils.keyByteToString(this.getNodeId());
-        File file = new File(directoryName + "/" + key);
-
-        File tombstoneFile = new File(directoryName + "/" + key + ".tombstone");
+        File file = new File(this.directory + "/" + key);
+        File tombstoneFile = new File(this.directory + "/" + key + ".tombstone");
         try {
             tombstoneFile.createNewFile();
         } catch(IOException e){
@@ -134,7 +140,7 @@ public class Store extends Node implements KeyValueStore {
             MembershipService stub = (MembershipService) UnicastRemoteObject.exportObject(store, 0);
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.getRegistry();
-            registry.bind(address, stub);
+            registry.rebind(address, stub);
 
             System.err.println("Server ready");
         } catch (Exception e) {

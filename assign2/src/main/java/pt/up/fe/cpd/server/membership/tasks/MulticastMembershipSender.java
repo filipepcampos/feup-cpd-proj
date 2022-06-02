@@ -1,5 +1,6 @@
 package pt.up.fe.cpd.server.membership.tasks;
 
+import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.server.membership.*;
 import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 
@@ -12,12 +13,14 @@ public class MulticastMembershipSender implements Runnable {
     final private int multicastPort;
     final private int membershipCounter;
     final private ClusterViewer clusterViewer;
+    final private NodeInfo nodeInfo;
 
-    public MulticastMembershipSender(InetAddress multicastAddress, int multicastPort, int membershipCounter, ClusterViewer clusterViewer){
+    public MulticastMembershipSender(InetAddress multicastAddress, int multicastPort, int membershipCounter, ClusterViewer clusterViewer, NodeInfo nodeInfo){
         this.multicastAddress = multicastAddress;
         this.multicastPort = multicastPort;
         this.membershipCounter = membershipCounter;
         this.clusterViewer = clusterViewer;
+        this.nodeInfo = nodeInfo;
     }
 
     @Override
@@ -31,8 +34,7 @@ public class MulticastMembershipSender implements Runnable {
 
             MembershipMessenger message = new MembershipMessenger(MembershipEvent.MEMBERSHIP, membershipCounter, multicastAddress, multicastPort);
             try {
-                System.out.println("Sending membershipLog via multicast");
-                message.send("", clusterViewer.getLogRepresentation());
+                message.send(nodeInfo.getAddress() + " " + nodeInfo.getPort(), clusterViewer.getLogRepresentation());
             }
             catch (IOException e) {
                 e.printStackTrace();
