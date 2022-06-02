@@ -84,8 +84,8 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         printDebugInfo("Joining the cluster");
         MembershipMessenger message = new MembershipMessenger(MembershipEvent.JOIN, this.membershipCounter, this.multicastAddress, this.multicastPort);
         try {
+            MembershipInformationListener listener = new MembershipInformationListener((ActiveNodeInfo) this, cluster, 3);
             for (int i = 0; i < 3; ++i) {
-                MembershipInformationListener listener = new MembershipInformationListener((ActiveNodeInfo) this, cluster, 3);
                 Future<Boolean> futureResult = executor.submit(listener);
                 message.send(this.getAddress(), this.getPort());
                 printDebugInfo("JOIN multicast message sent (" + (i+1) + "/3)");
