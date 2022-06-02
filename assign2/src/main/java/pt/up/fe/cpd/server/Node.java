@@ -42,8 +42,8 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         this.multicastPort = multicastPort;
 
 
-        this.membershipCounter = 0; // TODO: Write/Read from file
-        readMembershipCounter();
+        this.membershipCounter = 0;
+        this.readMembershipCounter();
         this.executor = Executors.newFixedThreadPool(8);
         printDebugInfo("Node online with hash " + HashUtils.keyByteToString(getNodeId()));
     }
@@ -109,6 +109,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
                 }
             }
 
+            cluster.saveLog();
             printDebugInfo("Opening TCP connection");
             this.open();
             synchronized (connection){
@@ -192,7 +193,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         File file = new File("membership_" + HashUtils.keyByteToString(this.getNodeId()) + "/membership.counter");
         try {
             BufferedReader reader = new BufferedReader(new FileReader(file));
-            this.membershipCounter = Integer.parseInt(reader.readLine());
+            this.membershipCounter = Integer.parseInt(reader.readLine()) + 1;
             reader.close();
         } catch(FileNotFoundException e){
             this.membershipCounter = 0;

@@ -56,7 +56,6 @@ public class MembershipInformationListener implements Callable<Boolean> {
                     int receivedMembershipCounter   = Integer.parseInt(splitLog[1]);
                     clusterManager.addLogEntry(new MembershipLogEntry(receivedAddress, receivedPort, receivedMembershipCounter));
                 }
-
                 this.neededConnections--;
             } catch(IOException e) {
                 listener.close();

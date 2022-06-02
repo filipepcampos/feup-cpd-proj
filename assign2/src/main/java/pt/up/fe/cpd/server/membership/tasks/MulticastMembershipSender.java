@@ -31,6 +31,7 @@ public class MulticastMembershipSender implements Runnable {
 
             MembershipMessenger message = new MembershipMessenger(MembershipEvent.MEMBERSHIP, membershipCounter, multicastAddress, multicastPort);
             try {
+                System.out.println("Sending membershipLog via multicast");
                 message.send("", clusterViewer.getLogRepresentation());
             }
             catch (IOException e) {
