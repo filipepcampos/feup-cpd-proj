@@ -119,6 +119,8 @@ public class MulticastListener implements Runnable {
                 parsedNodeInfo.getPort() == this.nodeInfo.getPort()) {
             return;
         }
+        // If parsedNodeInfo in log -> dont execute
+        
 
         executor.execute(new MembershipInformationSender(parsedNodeInfo, clusterViewer));
     }

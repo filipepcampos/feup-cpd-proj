@@ -22,7 +22,7 @@ public class MembershipInformationListener implements Callable<Boolean> {
     public Boolean call(){
         TCPListener listener;
         try {
-            listener = new TCPListener(nodeInfo.getInetAddress(), nodeInfo.getPort(), 1000);
+            listener = new TCPListener(nodeInfo.getInetAddress(), nodeInfo.getPort() + 1, 1000);
         } catch (IOException e) {
             return false;
         }

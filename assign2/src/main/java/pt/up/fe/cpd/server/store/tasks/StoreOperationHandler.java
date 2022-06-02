@@ -42,14 +42,7 @@ public class StoreOperationHandler implements Runnable {
             String[] splitHeader = header.split(" ");
             String operation = splitHeader[0];
 
-            if (operation.equals("MEMBERSHIP")) {
-                scanner.close();
-                dataInputStream.close();
-                socket.close();
-                return;
-            }
-
-            System.out.println("[StoreOperationHandler] opened");
+            System.out.println("Opened an operation handler");
             
             // REPLICATE PUT key
             // REPLICATE DELETE key
@@ -133,7 +126,15 @@ public class StoreOperationHandler implements Runnable {
 
     private void handleRedirect(NodeInfo node, String operation, String key, DataInputStream clientInputStream) throws IOException {
         InetAddress nodeAddress = InetAddress.getByName(node.getAddress());
-        Socket nodeSocket = new Socket(nodeAddress, node.getPort());
+
+        Socket nodeSocket;
+        try {
+            nodeSocket = new Socket(nodeAddress, node.getPort());
+        } catch(ConnectException e){
+            System.out.println("Connection to " + node + " refused.");
+            return;
+        }
+        
         DataOutputStream nodeOutputStream = new DataOutputStream(nodeSocket.getOutputStream());
 
         nodeOutputStream.write((operation + " " + key + "\n").getBytes("UTF-8"));
