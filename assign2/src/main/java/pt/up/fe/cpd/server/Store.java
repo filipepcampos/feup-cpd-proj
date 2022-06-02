@@ -28,7 +28,8 @@ public class Store extends Node implements KeyValueStore {
 
     @Override
     public void receive(){
-        this.getExecutor().execute(new StoreOperationListener(this, this.getListener(), this.getExecutor(), (ClusterSearcher) getCluster(), (ClusterViewer) getCluster()));
+        this.getExecutor().execute(new StoreOperationListener(this, this.getListener(), this.getExecutor(), (ClusterSearcher) getCluster(), (ClusterViewer) getCluster(), 
+                                                              this.getMulticastAddress(), this.getMulticastPort()));
     }
 
     @Override

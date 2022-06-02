@@ -10,7 +10,10 @@ import java.util.concurrent.ExecutorService;
 import pt.up.fe.cpd.networking.FileTransfer;
 import pt.up.fe.cpd.server.ActiveNodeInfo;
 import pt.up.fe.cpd.server.NodeInfo;
+import pt.up.fe.cpd.server.membership.MembershipEvent;
+import pt.up.fe.cpd.server.membership.MembershipMessenger;
 import pt.up.fe.cpd.server.membership.cluster.ClusterSearcher;
+import pt.up.fe.cpd.server.membership.cluster.ClusterViewer;
 import pt.up.fe.cpd.server.replication.RemoveFiles;
 import pt.up.fe.cpd.server.replication.SendReplicateFileMessage;
 import pt.up.fe.cpd.server.replication.SendDeleteMessage;
@@ -22,13 +25,19 @@ public class StoreOperationHandler implements Runnable {
     final private KeyValueStore keyValueStore;
     final private Socket socket;
     final private ClusterSearcher searcher;
+    final private ClusterViewer clusterViewer;
     final private ExecutorService executor;
+    final private InetAddress multicastAddress;
+    final private int multicastPort;
     
-    public StoreOperationHandler(KeyValueStore keyValueStore, Socket socket, ClusterSearcher searcher, ExecutorService executor) {
+    public StoreOperationHandler(KeyValueStore keyValueStore, Socket socket, ClusterSearcher searcher, ClusterViewer clusterViewer, ExecutorService executor, InetAddress multicaAddress, int multicaPort) {
         this.keyValueStore = keyValueStore;
         this.socket = socket;
         this.searcher = searcher;
+        this.clusterViewer = clusterViewer;
         this.executor = executor;
+        this.multicastAddress = multicaAddress;
+        this.multicastPort = multicaPort;
     }
 
     @Override
@@ -132,6 +141,8 @@ public class StoreOperationHandler implements Runnable {
             nodeSocket = new Socket(nodeAddress, node.getPort());
         } catch(ConnectException e){
             System.out.println("Connection to " + node + " refused.");
+            MembershipMessenger message = new MembershipMessenger(MembershipEvent.LEAVE, this.clusterViewer.getMembershipCounter(node), this.multicastAddress, this.multicastPort);
+            message.send(node.getAddress(), node.getPort());
             return;
         }
         

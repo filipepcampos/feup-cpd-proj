@@ -15,13 +15,18 @@ public class StoreOperationListener implements Runnable {
     private final ExecutorService executor;
     private final ClusterSearcher searcher;
     private final ClusterViewer clusterViewer;
+    private final InetAddress multicaAddress;
+    private final int multicastPort;
 
-    public StoreOperationListener(KeyValueStore keyValueStore, TCPListener listener, ExecutorService executor, ClusterSearcher searcher, ClusterViewer clusterViewer){
+    public StoreOperationListener(KeyValueStore keyValueStore, TCPListener listener, ExecutorService executor, ClusterSearcher searcher, ClusterViewer clusterViewer,
+                                  InetAddress multicastAddress, int multicastPort){
         this.keyValueStore = keyValueStore;
         this.executor = executor;
         this.listener = listener;
         this.searcher = searcher;
         this.clusterViewer = clusterViewer;
+        this.multicaAddress = multicastAddress;
+        this.multicastPort = multicastPort;
     }
 
     @Override
@@ -29,7 +34,7 @@ public class StoreOperationListener implements Runnable {
         while(clusterViewer.getConnectionStatus() == ConnectionStatus.CONNECTED) {
             try {
                 Socket socket = listener.accept();
-                executor.execute(new StoreOperationHandler(keyValueStore, socket, searcher, executor));
+                executor.execute(new StoreOperationHandler(keyValueStore, socket, searcher, clusterViewer, executor, multicaAddress, multicastPort));
             } catch(IOException e) {}
         }
     }

@@ -79,4 +79,9 @@ public class Cluster implements ClusterManager, ClusterViewer{
     public int getNodeCount() {
         return nodeSet.size();
     }
+
+    @Override
+    public int getMembershipCounter(NodeInfo node) {
+        return log.getCounter(node);
+    }
 }

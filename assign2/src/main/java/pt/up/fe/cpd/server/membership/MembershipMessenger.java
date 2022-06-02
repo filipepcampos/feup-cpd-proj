@@ -15,7 +15,7 @@ public class MembershipMessenger extends MulticastMessenger {
     }
 
     public void send(String storeAddress, int storePort) throws IOException {
-        String header = storeAddress+ " " + storePort + " " +  membershipCounter;
+        String header = storeAddress + " " + storePort + " " +  membershipCounter;
         this.send(header, "");
     }
 

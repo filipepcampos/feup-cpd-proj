@@ -60,6 +60,14 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         return cluster;
     }
 
+    public InetAddress getMulticastAddress() {
+        return multicastAddress;
+    }
+
+    public int getMulticastPort() {
+        return multicastPort;
+    }
+
     public void open(){
         try {
             this.listener = new TCPListener(this.getInetAddress(), this.getPort());
