@@ -74,7 +74,6 @@ public class SendReplicateFilesMessage implements Runnable {
             DataInputStream inputStream = new DataInputStream(fileInputStream);
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
-            System.out.println("DEBUG: " + "REPLICATE PUT " + file.getName() + "\n\n");
             outputStream.write(("REPLICATE PUT " + file.getName() + "\n\n").getBytes("UTF-8"));
 
             boolean transferSuccessful = FileTransfer.transfer(inputStream, outputStream);
