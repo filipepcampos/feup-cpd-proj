@@ -6,6 +6,7 @@ import pt.up.fe.cpd.server.membership.MembershipService;
 import java.net.Socket;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.MessageDigest;
+import java.text.ParseException;
 import java.time.Instant;
 
 import pt.up.fe.cpd.utils.HashUtils;
@@ -23,26 +25,37 @@ import pt.up.fe.cpd.utils.Pair;
 // The test client should be invoked as follows: $ java TestClient <node_ap> <operation> [<opnd>]
 public class TestClient {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         if(args.length < 2){
             System.out.println("Invalid arguments");
-            System.out.println("Usage: java TestClient <node_ap> <operation> [<opnd>]");
+            printUsage();
         }
-        String node_ap =  args[0]; // TODO: Change node_ap (If the service uses RMI, this must be the IP address and the name of the remote object providing the service.)
+        String node_ap =  args[0];
         String operation = args[1];
 
-        switch(operation){
-            case "join": join(node_ap); break;
-            case "leave": leave(node_ap); break;
-            case "get": get(node_ap, args[2]); break;
-            case "put": put(node_ap, args[2]); break;
-            case "delete": delete(node_ap, args[2]); break;
-            case "view": view(node_ap); break;
+        try {
+            switch(operation){
+                case "join": join(node_ap); break;
+                case "leave": leave(node_ap); break;
+                case "get": get(node_ap, args[2]); break;
+                case "put": put(node_ap, args[2]); break;
+                case "delete": delete(node_ap, args[2]); break;
+                case "view": view(node_ap); break;
+            }
+        } catch(IOException e){
+            System.out.println("Couldn't connect to the store service, the node hasn't joined the cluster yet.");        
         }
     }
 
     public static void get(String node_ap, String key) throws IOException {
-        Pair<InetAddress, Integer> parsedNodeAp = parseNodeAp(node_ap);
+        Pair<InetAddress, Integer> parsedNodeAp;
+        try {
+            parsedNodeAp = parseNodeAp(node_ap);
+        } catch(ParseException e){
+            System.out.println("Invalid node_ap");
+            printUsage();
+            return;
+        }
         InetAddress address = parsedNodeAp.first;
         int port = parsedNodeAp.second;
    
@@ -57,13 +70,18 @@ public class TestClient {
         DataOutputStream fileOutputStream;
         try{
             fileOutputStream = new DataOutputStream(new FileOutputStream(key)); // TODO: What name should the file have
-        } catch(FileNotFoundException e){
-            System.out.println("File cannot be found.");
+        } catch(FileNotFoundException e) {
+            socketInputStream.close();
+            socketOutputStream.close();
             socket.close();
             return;
         }
 
         boolean transferSuccessful = FileTransfer.transfer(socketInputStream, fileOutputStream);
+        if(!transferSuccessful){
+            File file = new File(key);
+            file.delete();
+        }
 
         fileOutputStream.close();
         socketInputStream.close();
@@ -72,7 +90,14 @@ public class TestClient {
     }
 
     public static String put(String node_ap, String file_path) throws IOException {
-        Pair<InetAddress, Integer> parsedNodeAp = parseNodeAp(node_ap);
+        Pair<InetAddress, Integer> parsedNodeAp;
+        try {
+            parsedNodeAp = parseNodeAp(node_ap);
+        } catch(ParseException e){
+            System.out.println("Invalid node_ap");
+            printUsage();
+            return "";
+        }
         InetAddress address = parsedNodeAp.first;
         int port = parsedNodeAp.second;
         
@@ -106,11 +131,20 @@ public class TestClient {
         outputStream.close();
         socket.close();
 
-        return HashUtils.keyByteToString(key);
+        String keyString = HashUtils.keyByteToString(key);
+        System.out.println("File stored in key " + keyString);
+        return keyString;
     }
 
     public static void delete(String node_ap, String key) throws IOException {
-        Pair<InetAddress, Integer> parsedNodeAp = parseNodeAp(node_ap);
+        Pair<InetAddress, Integer> parsedNodeAp;
+        try {
+            parsedNodeAp = parseNodeAp(node_ap);
+        } catch(ParseException e){
+            System.out.println("Invalid node_ap");
+            printUsage();
+            return;
+        }
         InetAddress address = parsedNodeAp.first;
         int port = parsedNodeAp.second;
    
@@ -123,11 +157,18 @@ public class TestClient {
         socket.close();
     }
 
-    public static void join(String host){
+    public static void join(String node_ap){
+        Pair<String, String> parsedAp;
         try {
-            Registry registry = LocateRegistry.getRegistry();
-            System.out.println("Locating host " + host);
-            MembershipService stub = (MembershipService) registry.lookup(host);
+            parsedAp = parseRMIAp(node_ap);
+        } catch(ParseException e){
+            System.out.println("Invalid node_ap");
+            printUsage();
+            return;
+        }
+        try {
+            Registry registry = LocateRegistry.getRegistry(parsedAp.first);
+            MembershipService stub = (MembershipService) registry.lookup(parsedAp.second);
             stub.join();
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
@@ -135,11 +176,18 @@ public class TestClient {
         }
     }
     
-    public static void leave(String host){
+    public static void leave(String node_ap){
+        Pair<String, String> parsedAp;
         try {
-            Registry registry = LocateRegistry.getRegistry();
-            System.out.println("Locating host " + host);
-            MembershipService stub = (MembershipService) registry.lookup(host);
+            parsedAp = parseRMIAp(node_ap);
+        } catch(ParseException e){
+            System.out.println("Invalid node_ap");
+            printUsage();
+            return;
+        }
+        try {
+            Registry registry = LocateRegistry.getRegistry(parsedAp.first);
+            MembershipService stub = (MembershipService) registry.lookup(parsedAp.second);
             stub.leave();
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
@@ -147,11 +195,19 @@ public class TestClient {
         }
     }
 
-    public static void view(String host){
+    public static void view(String node_ap){
+        Pair<String, String> parsedAp;
         try {
-            Registry registry = LocateRegistry.getRegistry();
-            System.out.println("Locating host " + host);
-            MembershipService stub = (MembershipService) registry.lookup(host);
+            parsedAp = parseRMIAp(node_ap);
+        } catch(ParseException e){
+            System.out.println("Invalid node_ap");
+            printUsage();
+            return;
+        }
+        
+        try {
+            Registry registry = LocateRegistry.getRegistry(parsedAp.first);
+            MembershipService stub = (MembershipService) registry.lookup(parsedAp.second);
             System.out.println(stub.view());
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
@@ -159,12 +215,32 @@ public class TestClient {
         }
     }
     
-    private static Pair<InetAddress, Integer> parseNodeAp(String node_ap) throws IOException {
+    private static Pair<InetAddress, Integer> parseNodeAp(String node_ap) throws IOException, ParseException {
         // Host: ip_addr:port
         String[] splitHost = node_ap.split(":");
+        if(splitHost.length != 2){
+            throw new ParseException("",0);
+        }
         String addressString = splitHost[0];
         int port = Integer.parseInt(splitHost[1]);
         InetAddress address = InetAddress.getByName(addressString);
         return new Pair<>(address, port);
+    }
+
+    private static Pair<String, String> parseRMIAp(String ap) throws ParseException {
+        // RMI: ip_addr:ip_addr_rmi
+        String[] splitAp = ap.split(":");
+        if(splitAp.length != 2){
+            throw new ParseException("",0);
+        }
+        String rmiAddress = splitAp[0];
+        String rmiObject = splitAp[1];
+        return new Pair<String,String>(rmiAddress, rmiObject);
+    }
+
+    private static void printUsage(){
+        System.out.println("Usage: java TestClient <node_ap> <operation> [<opnd>]");
+        System.out.println("Example: java TestClient 127.0.0.1:127.0.0.1_9002 put ./file.txt");
+        System.out.println("Example: java TestClient 127.0.0.1:9002 join");
     }
 }

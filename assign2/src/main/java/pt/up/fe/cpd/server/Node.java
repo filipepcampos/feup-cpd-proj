@@ -207,7 +207,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         }
     }
 
-    private void printDebugInfo(String message){
+    protected void printDebugInfo(String message){
         System.out.println("[" + getAddress() + ":" + getPort()  + "] " + message);
     }
 }

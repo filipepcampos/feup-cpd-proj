@@ -59,9 +59,9 @@ public class MulticastListener implements Runnable {
             return;
         }
 
-        byte[] buf = new byte[1024];
+        byte[] buf = new byte[2048];
         while (clusterViewer.getConnectionStatus() == ConnectionStatus.CONNECTED) {
-            DatagramPacket packet = new DatagramPacket(buf, 1024); // TODO: Try out of loop
+            DatagramPacket packet = new DatagramPacket(buf, 2048); // TODO: Try out of loop
             try {
                 socket.receive(packet);
             } catch(IOException e) {

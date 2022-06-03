@@ -69,10 +69,10 @@ public class StoreOperationHandler implements Runnable {
                 String key = splitHeader[1];
                 NodeInfo node = this.searcher.findNodeByKey(HashUtils.keyStringToByte(key));
                 if(this.searcher.isActiveNode(node)){
-                    System.out.println("THIS KEY BELONGS TO ME!!!");
+                    System.out.println("Key belongs to this node.");
                     handleRequest(operation, key, dataInputStream);
                 } else {
-                    System.out.println("not my responsibility... " + node.toString() + " this one's for you");
+                    System.out.println("Key belongs to node " + node.toString());
                     boolean sent = handleRedirect(node, operation, key, dataInputStream);
                     if(!sent){
                         handleRedirectToCrashedNode(node, operation, key, dataInputStream);

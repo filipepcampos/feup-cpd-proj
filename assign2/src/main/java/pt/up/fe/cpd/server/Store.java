@@ -48,75 +48,74 @@ public class Store extends Node implements KeyValueStore {
     }
 
     @Override
-    public boolean put(String key, DataInputStream data) {     // TODO: Change return to Booleean for success or failure
-        // Transfer file
+    public boolean put(String key, DataInputStream data) {
+        
+        File tombstoneFile = new File(this.directory + "/" + key + ".tombstone");
+        if(tombstoneFile.exists()){
+            this.printDebugInfo("Tombstone file found when trying to PUT");
+            return false;
+        }
+
         FileOutputStream fileOutputStream;
         try{
-            File tombstoneFile = new File(this.directory + "/" + key + ".tombstone");
-            if(tombstoneFile.exists()){
-                data.close();
-                return false;
-            }
-
-            fileOutputStream = new FileOutputStream(this.directory + "/" + key); // TODO: What name should the file have
-        } catch(FileNotFoundException e){   // TODO: This is quite irrelevant
-            System.out.println("File cannot be found.");
-            try {
-                data.close();
-            } catch(IOException e1){
-                e1.printStackTrace();
-            }
-            return false;
-        } catch(IOException e){
+            fileOutputStream = new FileOutputStream(this.directory + "/" + key);
+        } catch(FileNotFoundException e) {  // This should never happen
             return false;
         }
         
         DataOutputStream outputStream = new DataOutputStream(fileOutputStream);
 
+        // File transfer
         boolean transferSuccessful = FileTransfer.transfer(data, outputStream);
+        
         try{
             outputStream.close();
+            fileOutputStream.close();
         } catch (IOException e){
-            e.printStackTrace();
+            this.printDebugInfo("Couldn't close file output stream correctly");
+            return false;
         }
+
         return transferSuccessful;
     }
 
     @Override
     public boolean get(String key, DataOutputStream data) {
-        // Transfer file
+
         FileInputStream fileInputStream;
         try{
             fileInputStream = new FileInputStream(this.directory + "/" + key);
         } catch(FileNotFoundException e){
-            System.out.println("File cannot be found.");
-            try {
-                data.close();
-            } catch(IOException e1){
-                e1.printStackTrace();
-            }
+            this.printDebugInfo("Couldn't find file with key=" + key);
             return false;
         }
         
         DataInputStream inputStream = new DataInputStream(fileInputStream);
 
         boolean transferSuccessful = FileTransfer.transfer(inputStream, data);
+        
         try{
             inputStream.close();
+            fileInputStream.close();
         } catch (IOException e){
-            e.printStackTrace();
+            this.printDebugInfo("Couldn't close file input stream correctly");
+            return false;
         }
+
         return transferSuccessful;
     }
 
     @Override
     public boolean delete(String key) {
+
         File file = new File(this.directory + "/" + key);
         File tombstoneFile = new File(this.directory + "/" + key + ".tombstone");
+        
         try {
             tombstoneFile.createNewFile();
         } catch(IOException e){
-            e.printStackTrace();
+            this.printDebugInfo("Couldn't create tombstone file");
+            return false;
         }
 
         return file.delete();
@@ -130,22 +129,21 @@ public class Store extends Node implements KeyValueStore {
 
         String multicastIP = args[0];
         String multicastPort = args[1];
-        String address = args[2]; // TODO: Use correct format
+        String address = args[2];
         String storagePort = args[3];
 
-        System.out.println("["+address+"] Store:: creating new Store (" + multicastIP + ", " + multicastPort + ", " + storagePort + ") ");
+        System.out.println("[" + address + "] Store:: creating new Store (" + multicastIP + ", " + multicastPort + ", " + storagePort + ") ");
 
         Store store = new Store(multicastIP, Integer.parseInt(multicastPort), address, Integer.parseInt(storagePort));
         try {
             MembershipService stub = (MembershipService) UnicastRemoteObject.exportObject(store, 0);
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.getRegistry();
-            registry.rebind(address, stub);
+            registry.rebind(address + "_" + storagePort, stub);
 
-            System.err.println("Server ready");
+            System.out.println("Server ready");
         } catch (Exception e) {
-            System.err.println("Server exception: " + e.toString());
-            e.printStackTrace();
+            System.out.println("Server exception: " + e.toString());
         }
     }
 }
