@@ -39,7 +39,7 @@ public class RemoveFiles implements Runnable {
                     }
                     return HashUtils.compare(fileKey, highestKey) <= 0;
                 } else { // lowestKey > highestKey
-                    // fileKey in [0, highestKey[ U [lowestKey, +infinity[ 
+                    // fileKey in [0, highestKey[ U [lowestKey, +infinity[
                     Boolean greaterEqThanHighestKey = HashUtils.compare(fileKey, highestKey) >= 0;
                     Boolean lowerThanLowestKey = HashUtils.compare(fileKey, lowestKey) < 0;
                     return !(greaterEqThanHighestKey && lowerThanLowestKey);
@@ -47,11 +47,8 @@ public class RemoveFiles implements Runnable {
             }
         });
 
-        System.out.println(this.currentNode + " Removing keys:" + HashUtils.keyByteToString(lowestKey).substring(0, 5) + " to " + HashUtils.keyByteToString(highestKey).substring(0, 5));
-
         if(matchingFiles != null){
             for (File file : matchingFiles) {
-                System.out.println(currentNode + " removing " + file.getName().substring(0, 5));
                 file.delete();
             }
         }

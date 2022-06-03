@@ -50,7 +50,7 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
         }
 
         this.executor = Executors.newFixedThreadPool(8);
-        printDebugInfo("Node online with hash " + HashUtils.keyByteToString(getNodeId()));
+        printDebugInfo("Node started.");
     }
 
     protected ExecutorService getExecutor() {
@@ -122,7 +122,6 @@ public abstract class Node extends ActiveNodeInfo implements MembershipService {
             }
             this.receive();
 
-            printDebugInfo("Sending JOINED message");
             message = new MembershipMessenger(MembershipEvent.JOINED, this.membershipCounter, this.multicastAddress, this.multicastPort);
             message.send(this.getAddress(), this.getPort());
             printDebugInfo("Sent JOINED message");

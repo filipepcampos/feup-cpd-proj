@@ -29,8 +29,6 @@ public class SendReplicateFilesMessage implements Runnable {
     @Override
     public void run(){
         File directory = new File("store_" + HashUtils.keyByteToString(currentNode.getNodeId()));
-
-        System.out.println(this.currentNode + " Replicating keys:" + HashUtils.keyByteToString(lowestKey).substring(0, 5) + " to " + HashUtils.keyByteToString(highestKey).substring(0, 5));
         File[] matchingFiles = directory.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
                 if (name.endsWith(".tombstone")){
@@ -66,7 +64,7 @@ public class SendReplicateFilesMessage implements Runnable {
     }
 
     private void sendReplicationOperation(File file){
-        System.out.println(currentNode + " replicating " + file.getName().substring(0, 5) + " to node " + targetNode);
+        System.out.println("[" + currentNode + "] replicating " + file.getName().substring(0, 5) + " to node " + targetNode);
         try {
             InetAddress targetNodeAddress = InetAddress.getByName(targetNode.getAddress());
             Socket socket = new Socket(targetNodeAddress, targetNode.getPort());
@@ -76,6 +74,7 @@ public class SendReplicateFilesMessage implements Runnable {
             DataInputStream inputStream = new DataInputStream(fileInputStream);
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
+            System.out.println("DEBUG: " + "REPLICATE PUT " + file.getName() + "\n\n");
             outputStream.write(("REPLICATE PUT " + file.getName() + "\n\n").getBytes("UTF-8"));
 
             boolean transferSuccessful = FileTransfer.transfer(inputStream, outputStream);

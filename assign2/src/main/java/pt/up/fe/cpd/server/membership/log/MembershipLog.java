@@ -94,7 +94,6 @@ public class MembershipLog {
 
             String line;
             while((line = reader.readLine()) != null){
-                System.out.println(file.getName() + " -> " + line);
                 String[] splitLine = line.split(" ");
                 String[] nodeId = splitLine[0].split(":");
                 String address = nodeId[0];

@@ -51,14 +51,13 @@ public class StoreOperationHandler implements Runnable {
 
             String[] splitHeader = header.split(" ");
             String operation = splitHeader[0];
-
-            System.out.println("Opened an operation handler");
             
             // REPLICATE PUT key
             // REPLICATE DELETE key
             // REPLICATE DELETE_RANGE key1 key2
             if (operation.equals("REPLICATE")) {
                 operation = splitHeader[1];
+                System.out.println("Received a " + operation + " REPLICATION request.");
                 if(operation.equals("DELETE_RANGE")){
                     handleDeleteRange(splitHeader[2], splitHeader[3]);
                 } else {
@@ -89,6 +88,7 @@ public class StoreOperationHandler implements Runnable {
     }
     
     private void handleDeleteRange(String lowestKey, String highestKey) {
+        System.out.println("Deleting range ]" + lowestKey.substring(0,5) + ", " + highestKey.substring(0,5)  + "]");
         ActiveNodeInfo activeNode = this.searcher.getActiveNode();
         RemoveFiles task = new RemoveFiles(activeNode, HashUtils.keyStringToByte(lowestKey), HashUtils.keyStringToByte(highestKey));
         task.run();
@@ -96,6 +96,7 @@ public class StoreOperationHandler implements Runnable {
 
     private void handleRequest(String operation, String key, DataInputStream dataInputStream) throws IOException {
         this.handleReplicationRequest(operation, key, dataInputStream);
+        System.out.println("Received a " + operation + " request.");
         NodeInfo currentNode = this.searcher.getActiveNode();
         Pair<NodeInfo, NodeInfo> neighbours = searcher.findTwoClosestNodes(currentNode);
 

@@ -19,7 +19,7 @@ public class SendDeleteMessage implements Runnable {
     public void run(){
         InetAddress address;
         String message = "REPLICATE DELETE " + HashUtils.keyByteToString(key);
-        System.out.println("Sending " + message + " to " + targetNode);
+        System.out.println("Delete" + HashUtils.keyByteToString(key).substring(0,5) + " in " + targetNode);
         try{
             address = InetAddress.getByName(targetNode.getAddress());
             TCPMessenger messenger = new TCPMessenger(address, targetNode.getPort());

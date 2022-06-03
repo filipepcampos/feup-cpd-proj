@@ -83,7 +83,7 @@ public class MulticastListener implements Runnable {
                     System.out.println("[" + this.nodeInfo +"] Received LEAVE multicast message");
                     handleLeave(received);
                     break;
-                case "MEMBERSHIP": // TODO: Deal with membership info
+                case "MEMBERSHIP":
                     handleMembership(received);
                     break;
                 case "JOINED":  // Node joined cluster successfully
@@ -186,7 +186,7 @@ public class MulticastListener implements Runnable {
                 }
             }
 
-            if(!oldNeighbours.second.equals(newNeighbours.second)){
+            if(!oldNeighbours.second.equals(newNeighbours.second) && clusterViewer.getNodeCount() > 2){ // It's redundant checking if nodeCount == 2, since both 'sides' are the equal
                 NodeInfo ANode = oldNeighbours.first;
                 NodeInfo BNode = this.nodeInfo;
                 NodeInfo CNode = newNeighbours.second;
@@ -304,7 +304,7 @@ public class MulticastListener implements Runnable {
         for(Map.Entry<NodeInfo, Integer> entry : this.nodeTimeToLiveMap.entrySet()){
             if(entry.getValue() <= 1 && !entry.getKey().equals(info)){
                 NodeInfo n = entry.getKey();
-                System.out.println(n + " has been unresponsive for too long, killing it with fire.");
+                System.out.println(n + " has been unresponsive for too long, sending LEAVE.");
                 MembershipMessenger message = new MembershipMessenger(MembershipEvent.LEAVE, this.clusterViewer.getMembershipCounter(n)+1, this.multicastAddress, this.multicastPort);
                 try {
                     message.send(n.getAddress(), n.getPort());

@@ -21,7 +21,7 @@ public class SendDeleteRangeMessage implements Runnable {
     public void run(){
         InetAddress address;
         String message = "REPLICATE DELETE_RANGE " + HashUtils.keyByteToString(lowestKey) + " " + HashUtils.keyByteToString(highestKey);
-        System.out.println("Sending " + message + " to " + targetNode);
+        System.out.println("Deleting range ]" + HashUtils.keyByteToString(lowestKey).substring(0,5) + ", " + HashUtils.keyByteToString(highestKey).substring(0,5)  + "] in " + targetNode);
         try{
             address = InetAddress.getByName(targetNode.getAddress());
             TCPMessenger messenger = new TCPMessenger(address, targetNode.getPort());

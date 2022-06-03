@@ -4,14 +4,10 @@ import pt.up.fe.cpd.networking.FileTransfer;
 import pt.up.fe.cpd.server.NodeInfo;
 import pt.up.fe.cpd.utils.HashUtils;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 
 public class SendReplicateFileMessage implements Runnable {
     private final NodeInfo currentNode;
@@ -30,8 +26,8 @@ public class SendReplicateFileMessage implements Runnable {
         if(!file.exists()){
             return;
         }
-        
-        System.out.println(currentNode + " replicating " + file.getName().substring(0, 5) + " to node " + targetNode);
+
+        System.out.println("["+ currentNode + "] replicating " + file.getName().substring(0, 5) + " to node " + targetNode);
 
         try {
             InetAddress targetNodeAddress = InetAddress.getByName(targetNode.getAddress());
@@ -43,7 +39,6 @@ public class SendReplicateFileMessage implements Runnable {
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
             outputStream.write(("REPLICATE PUT " + file.getName() + "\n\n").getBytes("UTF-8"));
-
             boolean transferSuccessful = FileTransfer.transfer(inputStream, outputStream);
 
             inputStream.close();

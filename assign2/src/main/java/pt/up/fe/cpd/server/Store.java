@@ -56,6 +56,7 @@ public class Store extends Node implements KeyValueStore {
             return false;
         }
 
+        System.out.println("debug-put " + this.directory + "/" + key);
         FileOutputStream fileOutputStream;
         try{
             fileOutputStream = new FileOutputStream(this.directory + "/" + key);
@@ -132,16 +133,12 @@ public class Store extends Node implements KeyValueStore {
         String address = args[2];
         String storagePort = args[3];
 
-        System.out.println("[" + address + "] Store:: creating new Store (" + multicastIP + ", " + multicastPort + ", " + storagePort + ") ");
-
         Store store = new Store(multicastIP, Integer.parseInt(multicastPort), address, Integer.parseInt(storagePort));
         try {
             MembershipService stub = (MembershipService) UnicastRemoteObject.exportObject(store, 0);
             // Bind the remote object's stub in the registry
             Registry registry = LocateRegistry.getRegistry();
             registry.rebind(address + "_" + storagePort, stub);
-
-            System.out.println("Server ready");
         } catch (Exception e) {
             System.out.println("Server exception: " + e.toString());
         }
