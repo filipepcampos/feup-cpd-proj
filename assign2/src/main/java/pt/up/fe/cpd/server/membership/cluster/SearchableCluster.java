@@ -15,7 +15,7 @@ public class SearchableCluster extends Cluster implements ClusterSearcher{
     }
 
     @Override
-    public NodeInfo findNodeByKey(byte[] key){ // TODO: This name is horrible
+    public NodeInfo findNodeByKey(byte[] key){
         NodeInfo item =  nodeSet.higher(new NodeInfo(key));
         if(item == null){ // Circular node representation
             return nodeSet.first();

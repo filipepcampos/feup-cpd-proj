@@ -56,7 +56,6 @@ public class Store extends Node implements KeyValueStore {
             return false;
         }
 
-        System.out.println("debug-put " + this.directory + "/" + key);
         FileOutputStream fileOutputStream;
         try{
             fileOutputStream = new FileOutputStream(this.directory + "/" + key);

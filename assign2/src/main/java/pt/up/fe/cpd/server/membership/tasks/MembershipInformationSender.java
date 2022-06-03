@@ -24,7 +24,7 @@ public class MembershipInformationSender implements Runnable {
         int randomNum = ThreadLocalRandom.current().nextInt(minWait, maxWait);
         try {
             TimeUnit.MILLISECONDS.sleep(randomNum);
-        } catch (InterruptedException e) { // TODO: Ver melhor
+        } catch (InterruptedException e) {
             return;
         }
         System.out.println("["+ this.nodeInfo + "] Sending TCP membership info (waited " + randomNum + " ms)");
@@ -32,7 +32,7 @@ public class MembershipInformationSender implements Runnable {
         try {
             sender.send(clusterViewer);
         } catch (IOException e) {
-            return;     // TODO: Handle it better
+            return;
         }
 
     }

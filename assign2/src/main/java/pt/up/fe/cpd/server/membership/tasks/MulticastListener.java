@@ -54,14 +54,14 @@ public class MulticastListener implements Runnable {
             socket = new MulticastSocket(multicastPort);
             socket.joinGroup(multicastAddress);
         } catch(IOException e) {
-            System.out.println("IO Exception"); // TODO: Error
+            System.out.println("IO Exception");
             e.printStackTrace();
             return;
         }
 
         byte[] buf = new byte[2048];
         while (clusterViewer.getConnectionStatus() == ConnectionStatus.CONNECTED) {
-            DatagramPacket packet = new DatagramPacket(buf, 2048); // TODO: Try out of loop
+            DatagramPacket packet = new DatagramPacket(buf, 2048);
             try {
                 socket.receive(packet);
             } catch(IOException e) {

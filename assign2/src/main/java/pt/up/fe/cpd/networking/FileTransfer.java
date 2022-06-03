@@ -13,7 +13,7 @@ public class FileTransfer {
 
         try {
             try {
-                TimeUnit.SECONDS.sleep(1); // TODO: Remove
+                TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

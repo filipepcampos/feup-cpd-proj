@@ -28,7 +28,7 @@ public class MulticastMembershipSender implements Runnable {
         while(clusterViewer.getConnectionStatus() == ConnectionStatus.CONNECTED){
             try {
                 TimeUnit.SECONDS.sleep(clusterViewer.getNodeCount());
-            } catch (InterruptedException e) { // TODO: Ver melhor
+            } catch (InterruptedException e) {
                 return;
             }
 

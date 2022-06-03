@@ -69,7 +69,7 @@ public class TestClient {
         // Transfer file
         DataOutputStream fileOutputStream;
         try{
-            fileOutputStream = new DataOutputStream(new FileOutputStream(key)); // TODO: What name should the file have
+            fileOutputStream = new DataOutputStream(new FileOutputStream(key));
         } catch(FileNotFoundException e) {
             socketInputStream.close();
             socketOutputStream.close();
