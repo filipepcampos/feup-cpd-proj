@@ -315,6 +315,8 @@ public class MulticastListener implements Runnable {
                 this.nodeTimeToLiveMap.put(entry.getKey(), entry.getValue() - 1);
             }
         }
-        this.nodeTimeToLiveMap.put(info, this.clusterViewer.getNodeCount() * 3);
+        if(this.nodeTimeToLiveMap.containsKey(info)){
+            this.nodeTimeToLiveMap.put(info, this.clusterViewer.getNodeCount() * 3);
+        }
     }
 }
