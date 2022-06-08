@@ -35,3 +35,7 @@ sh client.sh 127.0.0.1:9002 delete {key}
 In the first 3 options the <node_ap> contains the RMIRegister address followed by the Store RMI Object that, by default, is bound to the name address_port.
 
 The `cleanup.sh` script will terminate all active store processes and the rmi registry.
+
+## Revisions
+
+- Fixed race condition on MulticastListener
